@@ -250,6 +250,24 @@ head('5d. 探ると正解は分かるが影響力が落ちるか');
   ok(probe(st, 1).next.probesUsed === E.PROBE_LIMIT, '上限を超えて回数が増えない');
 }
 
+/* --- 5e. 対話（チップ式） -------------------------------------------------- */
+head('5e. 対話の返答が動機型と正しく対応しているか');
+ok(E.QUESTIONS.length === 3 && E.QUESTIONS.every((q, i) => q.cat === i),
+   '踏み込んだ問いが3カテゴリに1対1で対応している');
+ok(E.REPLIES.length === 3 && E.REPLIES.every(r => r.length === 6),
+   '返答が 3カテゴリ × 6動機型 = 18通り揃っている');
+ok(new Set(E.REPLIES.flat()).size === 18, '返答の本文に重複がない');
+ok(E.SMALLTALK.every(t => t.lines.length === 5), '世間話が5勢力すべてに用意されている');
+ok(E.CHARACTERS.every(c => c.correct.every((m, k) => typeof E.REPLIES[k][m] === 'string')),
+   '151名すべてについて、3つの問いに返す台詞が存在する');
+{
+  /* 返答は「刺さる型」をそのまま語る。つまり返答から正解カードが一意に定まる。 */
+  const c = E.CHAR_BY_ID.get(47);   // 近藤勇: 名誉 / 出自の低さ / 名分論
+  ok(E.REPLIES[0][c.correct[0]].includes('名'), '近藤勇に望みを問えば名誉を語る');
+  ok(E.REPLIES[1][c.correct[1]].includes('生まれ'), '近藤勇に縛りを問えば出自を語る');
+  ok(E.REPLIES[2][c.correct[2]].includes('名分'), '近藤勇に筋を問えば名分論を語る');
+}
+
 /* --- 6. エンディング分岐 ------------------------------------------------- */
 head('6. エンディング分岐');
 const mk = cur => E.evaluateEnding({ currents: cur });

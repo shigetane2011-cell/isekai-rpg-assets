@@ -52,6 +52,14 @@ button.primary:hover:not(:disabled){background:#8e1f24}
   font-size:.88rem;border-radius:2px;transition:.1s}
 .card:hover{border-color:var(--sumi2)}
 .card.sel{border-color:var(--shu);border-left:5px solid var(--shu);background:#fff}
+.chip{font-size:.8rem;padding:5px 14px;border-radius:14px;border-color:var(--ai);color:var(--ai)}
+.chip:hover{background:var(--ai);color:var(--washi2)}
+.chip.talk{border-color:var(--line);color:var(--sumi2)}
+.chip.talk:hover{background:var(--sumi2);color:var(--washi2)}
+.chip.used{display:inline-block;background:var(--ai);color:var(--washi2);border:1px solid var(--ai)}
+.chip.spent{display:inline-block;border:1px solid var(--line);color:var(--line)}
+.say{border-left:3px solid var(--ai);background:#fff;padding:9px 13px;margin:9px 0;font-size:.9rem}
+.say .q{font-size:.78rem;color:var(--ai);letter-spacing:.06em}
 .probe{font-size:.72rem;padding:2px 10px;margin-left:8px;vertical-align:1px;border-color:var(--kin);color:var(--kin)}
 .probe:hover{background:var(--kin);color:#fff}
 .probed{font-size:.72rem;margin-left:8px;color:var(--kin);letter-spacing:.1em}
@@ -507,6 +515,51 @@ const ENDINGS = {
     'あなたは名を残さなかった。だが幕末を生きた三千万の日本人のうち、名を残した者は千人にも満たない。あなたは、その圧倒的多数の側にいる。それだけのことだ。'],},
 };
 
+
+/* --- 対話（チップ式） ----------------------------------------------------
+   面会した相手には、踏み込んだ問いを **一つだけ** ぶつけられる。
+   返答はその人物の「刺さる型」をそのまま語るので、対応するカードが読める。
+   世間話は何度でも聞けるが、型の手がかりにはならない（雰囲気のためのもの）。
+   一つに絞っているのは実測による。二つ聞けると初心者でも84%通ってしまい、
+   腕前の差が消える。一問なら 名手98% / 上手91% / 普通75% / 初心39% に収まる。
+   ------------------------------------------------------------------------ */
+const QUESTIONS = [
+  { chip:'何を望んでおられる',       cat:0 },
+  { chip:'いま何に縛られておられる', cat:1 },
+  { chip:'何を筋とお考えか',         cat:2 },
+];
+const REPLIES = [
+  [ /* 利益提示 = 何を望むか */
+   '名だ。……笑わば笑え。人に侮られぬ名が、拙者には要る。',
+   '銭よ。志では飯は食えぬ。まずは腹を満たす算段が先だ。',
+   '無事でおりたい。それだけだ。嵐が過ぎるまで、この身が保てればよい。',
+   '事を成すことよ。身の一つなど、大義の前では軽いものだ。',
+   '力だ。いかに理を説こうと、力なき言葉は誰も聞かぬ。',
+   '知りたいのだ。この国の外に何があるのか、それを知らぬままでは死ねぬ。'],
+  [ /* 文脈理解 = 何に縛られているか */
+   '家よ。わし一人の存念では動けぬ。背には代々の名がある。',
+   '主命だ。上つ方の御意向に背いては、この立場が立たぬ。',
+   '町の者たちよ。政がどう転ぼうと、焼かれるのはいつも彼らだ。',
+   '湾の外の黒い船だ。あれを見てからというもの、夜も眠れぬ。',
+   '先に逝った者たちだ。あの者らの名が、わしの足を縛っておる。',
+   '生まれよ。どれだけ功を立てようと、拙者は末席に座らされる。'],
+  [ /* 論理整合 = 何を筋と考えるか */
+   '目指すものと、やることが食い違うてはならぬ。ただそれだけだ。',
+   '順序よ。一足飛びに事を成そうとした者は、みな崩れていった。',
+   '釣り合いだ。どちらかが強くなりすぎれば、この国は割れる。',
+   '名分よ。筋の通らぬ話には、いかに利があろうと乗れぬ。',
+   '損得だ。きれいごとは飽いた。何が手に入るのかを言え。',
+   '時勢よ。人が決めるのではない。もう決まっておることに、人が従うのだ。'],
+];
+const SMALLTALK = [
+  { chip:'時勢をどう見ておられる', lines:[
+    '御所と幕府が睦まじくあれば、この国は保つ。それを崩そうとする者らが解せぬ。',
+    'もう戻れぬよ。港は開いた。あとは、どう渡り合うかの話でしかない。',
+    '三百年、この屋根の下で戦がなかった。それを軽んじる者が多すぎる。',
+    '一藩では何もできぬ。だが藩が連なれば、幕府とて動かせる。',
+    '斬るべき時に斬らねば、斬られるのはこちらだ。議論の時はもう過ぎた。'] },
+];
+
 /* --- 状態 ---------------------------------------------------------------- */
 const MAX_TURN = 10, GOAL = 30, CAP = 40, COMBO_MIN = 10;
 /* 相手を「探る」と3つの正解がすべて分かるが、手の内を明かした分だけ影響力が落ち、
@@ -734,7 +787,7 @@ function hashState(st){
 }
 
 const ENGINE = { mulberry32, streamOf, FACTIONS, ERAS, RANKS, CHARACTERS, CHAR_BY_ID, CARDS, CATS,
-  TIES, TIE_GRAPH, ENDINGS, MAX_TURN, GOAL, CAP, COMBO_MIN, PROBE_LIMIT, ROSTER, OPPOSED, WARY_LINE, waryOf, createState, totalOf, eraOf, eraOfTotal, rankOfId, baseId,
+  TIES, TIE_GRAPH, QUESTIONS, REPLIES, SMALLTALK, ENDINGS, MAX_TURN, GOAL, CAP, COMBO_MIN, PROBE_LIMIT, ROSTER, OPPOSED, WARY_LINE, waryOf, createState, totalOf, eraOf, eraOfTotal, rankOfId, baseId,
   meetingList, introPick, cardOptions, composeArgument, resolve, evaluateEnding, replay,
   encodeSave, decodeSave, hashState };
 if (typeof globalThis !== 'undefined') globalThis.ENGINE = ENGINE;
@@ -747,7 +800,8 @@ const app = document.getElementById('app');
 const E = ENGINE;
 let st = null;
 let ui = { screen:'title', charId:null, stance:null, ownF:null, argueF:null,
-           picks:[null,null,null], probed:false, opts:null, report:null, intro:false };
+           picks:[null,null,null], probed:false, asked:null, chatted:[],
+           opts:null, report:null, intro:false };
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fac = i => E.FACTIONS[i];
@@ -800,7 +854,8 @@ function viewTitle(){
     <p class="small">説得は<b>論証カード</b>で行います。「利益提示・文脈理解・論理整合」の3枚を選び、その人物に本当に刺さる組み合わせを当ててください。手がかりは各人物の【情勢】描写です。</p>
     <p class="small"><b>支持</b>は2枚一致でも通ります。<b>転向</b>は攻撃なので3枚すべて刺さらねば通りません。<br>
     そして<b>旗色を鮮明にするほど、敵対する勢力の人物は耳を貸さなくなります</b>（いずれかの時勢が12以上で、対立勢力の人物は判定が一段下がる）。寄せ切るか、抑えて回るかが最大の判断です。</p>
-    <p class="small">読み切れないときは<b>「探る」</b>で3つの正解をすべて開けられます。ただし手の内を明かした分だけ影響力が落ち、<b>その交渉の獲得が1下がります</b>。使えるのは<b>1局に4回まで</b>。<br>
+    <p class="small">面会した相手には<b>踏み込んだ問いを一つだけ</b>ぶつけられます。返答はその者に何が刺さるかを語るので、どのカードを選ぶべきかが読めます。世間話は何度でもできます。</p>
+    <p class="small">それでも読み切れないときは<b>「探る」</b>で3つの正解をすべて開けられます。ただし手の内を明かした分だけ影響力が落ち、<b>その交渉の獲得が1下がります</b>。使えるのは<b>1局に4回まで</b>。<br>
     元の獲得が大きい大物ほど代償は相対的に軽いので、<b>探りは大物と、失敗できない転向に取っておくのが得</b>です。</p>
     <p class="small">同じ seed と同じ選択なら、盤面は必ず同じになります（完全リプレイ可能）。</p>
     <div class="row" style="align-items:center">
@@ -855,7 +910,7 @@ function viewMeeting(){
   app.querySelectorAll('.person').forEach(el => el.onclick = () => {
     ui.charId = +el.dataset.id; ui.intro = el.classList.contains('intro');
     ui.stance = null; ui.ownF = null; ui.argueF = null;
-    ui.picks = [null,null,null]; ui.probed = false;
+    ui.picks = [null,null,null]; ui.probed = false; ui.asked = null; ui.chatted = [];
     ui.screen = 'stance'; render();
   });
 }
@@ -888,11 +943,42 @@ function viewStance(){
           `<button data-argue="${f}">${fac(f).name}（${fac(f).full}）</button>`).join('')}</div>`;
     }
   }
+  const wb0 = E.waryOf(st.currents, ui.charId);
+  const said = [];
+  if (ui.asked !== null)
+    said.push(`<div class="say"><span class="q">「${esc(E.QUESTIONS[ui.asked].chip)}か」</span><br>${
+      esc(E.REPLIES[ui.asked][c.correct[ui.asked]])}</div>`);
+  for (const k of ui.chatted)
+    said.push(k === 'impression'
+      ? `<div class="say"><span class="q">「拙者をどう見ておられる」</span><br>${
+          wb0 >= 0
+            ? esc(`〔${fac(wb0).name}〕の御方だと聞いておる。……何を申されても、そちらの利になるだけであろう。`)
+            : esc('まだ何者とも決めかねておる。だからこうして会うておるのだ。')}</div>`
+      : `<div class="say"><span class="q">「${esc(E.SMALLTALK[0].chip)}」</span><br>${
+          esc(E.SMALLTALK[0].lines[ui.ownF ?? c.factions[0]])}</div>`);
+
+  const chips = `
+    <div class="slot-h">対話 <span style="opacity:.7">— 踏み込んだ問いは<b>一つだけ</b>。返答は、その者に何が刺さるかを語る</span></div>
+    <div class="row">
+      ${E.QUESTIONS.map((q, i) => ui.asked === i
+        ? `<span class="chip used">${esc(q.chip)}</span>`
+        : ui.asked !== null
+          ? `<span class="chip spent">${esc(q.chip)}</span>`
+          : `<button class="chip" data-ask="${i}">${esc(q.chip)}</button>`).join('')}
+    </div>
+    <div class="row">
+      ${ui.chatted.includes('era') ? '' : `<button class="chip talk" data-chat="era">${esc(E.SMALLTALK[0].chip)}</button>`}
+      ${ui.chatted.includes('impression') ? '' : '<button class="chip talk" data-chat="impression">拙者をどう見ておられる</button>'}
+    </div>
+    ${said.join('')}`;
+
   app.innerHTML = headerHTML() +
     `<div class="panel"><h2>${esc(c.name)} — ${esc(c.nick)}</h2>
-      <div class="quote">${esc(c.desc)}</div>${body}
+      <div class="quote">${esc(c.desc)}</div>${chips}<hr>${body}
       <div class="row" style="margin-top:14px"><button id="back">面会相手を選び直す</button></div>
     </div>`;
+  app.querySelectorAll('[data-ask]').forEach(b => b.onclick = () => { ui.asked = +b.dataset.ask; render(); });
+  app.querySelectorAll('[data-chat]').forEach(b => b.onclick = () => { ui.chatted.push(b.dataset.chat); render(); });
   app.querySelectorAll('[data-own]').forEach(b => b.onclick = () => { ui.ownF = +b.dataset.own; render(); });
   app.querySelectorAll('[data-stance]').forEach(b => b.onclick = () => {
     ui.stance = b.dataset.stance;
@@ -916,6 +1002,8 @@ function viewCards(){
     `<div class="panel"><h2>${esc(c.name)}を${ui.stance === 'support' ? '支持する' : `${fac(ui.argueF).name}へ転向させる`}</h2>
       <div class="quote">${esc(c.desc)}</div>
       <div class="small">語る言葉は〔${fac(ui.argueF).name}〕の思想のもの。だが<b>刺さるかどうかは相手の型</b>で決まります。</div>
+      ${ui.asked !== null ? `<div class="say"><span class="q">「${esc(E.QUESTIONS[ui.asked].chip)}か」</span><br>${
+        esc(E.REPLIES[ui.asked][c.correct[ui.asked]])}</div>` : ''}
       ${ui.stance === 'convert' ? '<div class="warn">転向は3枚すべて刺さらねば通りません。</div>' : ''}
       ${E.waryOf(st.currents, ui.charId) >= 0 ? '<div class="warn">警戒されているため、判定は一段下がります。</div>' : ''}
       <div class="row" style="margin-top:12px">
