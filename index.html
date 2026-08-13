@@ -815,6 +815,11 @@ function viewEnding(){
   document.getElementById('again').onclick = () => { st = null; ui.screen = 'title'; render(); };
 }
 
+const CREDIT = `<hr><div class="small" style="text-align:center;opacity:.7;padding-bottom:20px">
+  原案『維新の乱流 ― 幕末、日本の夜明けを設計せよ ―』ミッキーベルグ<br>
+  本実装は原案のルールを、LLMを使わない決定論的プログラムとして再構成したものです。
+</div>`;
+
 function saveBoxHTML(){
   return `<div class="panel"><h2>保存 / 共有</h2>
     <div class="small">このコードを控えれば、同じ盤面をいつでも再現できます。</div>
@@ -826,6 +831,7 @@ function saveBoxHTML(){
 function render(){
   ({ title:viewTitle, meeting:viewMeeting, stance:viewStance,
      cards:viewCards, result:viewResult, ending:viewEnding })[ui.screen]();
+  app.insertAdjacentHTML('beforeend', CREDIT);
   window.scrollTo(0,0);
 }
 render();
