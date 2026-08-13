@@ -348,6 +348,27 @@ head('5g. 第8ターンの幕間');
   ok(moved === 100, '幕間の選択は必ず盤面を動かす（飾りになっていない）');
 }
 
+{
+  /* 上限到達と不正入力 */
+  const st = Object.assign(E.createState(1), { turn: E.INTERLUDE_TURN, currents: [37,0,20,0,0] });
+  const after = E.applyInterlude(st, 0);
+  ok(after.currents.some(v => v >= E.CAP) && after.finished,
+     '幕間の増減で上限40に達したら、その時点で終局になる');
+  let threw = 0;
+  for (const bad of [9, -1, 1.5, null, 'a']) { try { E.applyInterlude(st, bad); } catch { threw++; } }
+  ok(threw === 5, '幕間の選択番号が不正なら例外を投げる');
+  let rejected = 0;
+  for (const code of ['IR4:1:1,0,0,0,000,0#9', 'IR4:1:1,0,0,0,000,0#x',
+                      'IR4:1:1,0,0,0,000,0#-1', 'IR4:abc:1,0,0,0,000,0']) {
+    try { E.decodeSave(code); } catch { rejected++; }
+  }
+  ok(rejected === 4, '不正な保存コード（幕間番号・seed）をすべて弾く');
+  ok(Object.values(E.INTERLUDES).every(iv => iv.opts.every(o => o.after && o.after.length > 15)),
+     '全30択に、結末で読まれる後日文（after）がある');
+  ok(new Set(Object.values(E.INTERLUDES).flatMap(iv => iv.opts.map(o => o.after))).size === 30,
+     '30通りの後日文に重複がない');
+}
+
 /* --- 5h. 後日談 ------------------------------------------------------------ */
 head('5h. 後日談');
 ok([...E.FATES.keys()].every(id => E.CHAR_BY_ID.has(id)), '後日談が実在する人物IDだけを指している');
@@ -357,6 +378,9 @@ ok(E.CHARACTERS.every(c => {
   const w = E.fateOf(c.id, c.factions), l = E.fateOf(c.id, [9]);
   return w.text && l.text && w.text !== l.text && w.won === true && l.won === false;
 }), '151名全員について、勝ち側と負け側で異なる後日談が引ける');
+ok(!([...E.FATES.values()].flat().some(t =>
+  /内閣総理大臣|明治政府|維新三傑|元老|大日本帝国憲法|日露戦争|司法卿|内務卿|太政大臣|開拓使長官|学習院長/.test(t))),
+   '後日談に、代替史では成立しない明治固有の官職・事績が混じっていない');
 ok(E.FATE_TEMPLATE.length === 5 && E.FATE_TEMPLATE.every(t => t.length === 2),
    '中級・初級のひな型が5勢力 × 勝敗の2通り揃っている');
 {
