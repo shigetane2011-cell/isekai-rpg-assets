@@ -277,8 +277,14 @@ ok([...E.NOTES.keys()].filter(id => E.rankOfId(id) === 3).length === 16,
    '伝説級16名は全員に余話がある');
 {
   const n = [...E.NOTES.keys()].length, w = [...E.NOTES.values()].filter(v => v.works).length;
-  console.log(`  余話 ${n}/151名（初級3 中級29 上級21 伝説16）／ 関連作品つき ${w}名`);
-  ok(n >= 60, `主要人物に余話が行き渡っている（${n}名）`);
+  console.log(`  余話 ${n}/151名（実名の人物は全員）／ 関連作品つき ${w}名`);
+  const spots = [...E.NOTES.values()].filter(v => v.spot).length;
+  console.log(`  ゆかりの地つき ${spots}名`);
+  ok(n >= 120, `実名の人物すべてに余話がある（${n}名）`);
+  const anon = /下級公家|芸妓|住職|警衛|公家侍|師匠|豪商|蘭学医|通訳官|散髪師|少年|相撲取り|隊士|勘定方|町火消|同心|女中|密偵|足軽|郷士|陶芸家|留守居役|町衆|瓦版売り|若者|浪人|国学者の卵/;
+  const missing = E.CHARACTERS.filter(c => !E.NOTES.has(c.id) && !anon.test(c.name));
+  ok(missing.length === 0, `余話のない実名人物が残っていない${missing.length ? '（' + missing.map(c => c.name).join('・') + '）' : ''}`);
+  ok([...E.NOTES.values()].every(v => !v.spot || v.spot.trim().length > 2), 'ゆかりの地の表記に空欄がない');
 }
 
 /* --- 6. エンディング分岐 ------------------------------------------------- */
