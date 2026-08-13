@@ -136,7 +136,7 @@ ok(probe(1, 1, 'support', 0, 3).gain === 4, '初級・大成功 → +4');
 ok(probe(1, 1, 'support', 0, 2).gain === 2, '初級・成功 → +2');
 ok(probe(1, 1, 'support', 0, 1).gain === 0, '初級・失敗 → 変動なし');
 ok(probe(1, 1, 'support', 0, 0).gain === 0 && probe(1, 1, 'support', 0, 0).bannedNow, '初級・決裂 → 出現停止');
-const pre = probe(1, 100, 'support', 1, 3);
+const pre = probe(1, 145, 'support', 1, 3);
 ok(pre.premature && pre.gain === 4, '初級期に伝説級 → 時期尚早でボーナス無効（+4のまま）');
 const cv3 = atEra(8, 1, 3, 'convert', 4), cv2 = atEra(8, 1, 2, 'convert', 4);
 ok(cv3.delta[4] === 4 && cv3.delta[0] === -2, '転向・大成功 → 主張属性+4 / 相手属性-2');
@@ -156,11 +156,11 @@ function atEra(total, charId, score, stance = 'support', argueF = null) {
 }
 ok(atEra(12, 47, 3).gain === 5, '中級期に中級級・大成功 → +5（+1補正）');
 ok(atEra(12, 47, 2).gain === 3, '中級期に中級級・成功 → +3（+1補正）');
-ok(atEra(26, 83, 3).gain === 6, '上級期に上級級・大成功 → +6（+2補正）');
-ok(atEra(26, 83, 1).penalty === 1, '上級期に上級級・失敗 → 時勢-1');
-ok(atEra(40, 99, 3).gain === 8, '伝説期に伝説級・大成功 → +8（2倍）');
-ok(atEra(40, 99, 1).penalty === 3, '伝説期に伝説級・失敗 → 時勢-3');
-ok(atEra(12, 99, 1).penalty === 0, '時期尚早なら失敗ペナルティも無効');
+ok(atEra(26, 103, 3).gain === 6, '上級期に上級級・大成功 → +6（+2補正）');
+ok(atEra(26, 103, 1).penalty === 1, '上級期に上級級・失敗 → 時勢-1');
+ok(atEra(40, 144, 3).gain === 8, '伝説期に伝説級・大成功 → +8（2倍）');
+ok(atEra(40, 144, 1).penalty === 3, '伝説期に伝説級・失敗 → 時勢-3');
+ok(atEra(12, 144, 1).penalty === 0, '時期尚早なら失敗ペナルティも無効');
 
 /* --- 6. エンディング分岐 ------------------------------------------------- */
 head('6. エンディング分岐');
@@ -179,9 +179,14 @@ ok(mk([31,0,32,0,0]).t === '徳川の再臨', '複数が30超 → 最大値の�
 
 /* --- 7. データ整合性 ----------------------------------------------------- */
 head('7. データ整合性');
-ok(E.CHARACTERS.length === 100, '登場人物がちょうど100名');
-ok(new Set(E.CHARACTERS.map(c => c.id)).size === 100, 'IDに重複がない');
-ok(E.CHARACTERS.every(c => c.id >= 1 && c.id <= 100), 'IDが1〜100に収まる');
+ok(E.CHARACTERS.length === 151, '登場人物がちょうど151名');
+ok(new Set(E.CHARACTERS.map(c => c.id)).size === 151, 'IDに重複がない');
+ok(E.CHARACTERS.every(c => c.id >= 1 && c.id <= 151), 'IDが1〜151に収まる');
+const byRank = [0,1,2,3].map(r => E.CHARACTERS.filter(c => E.rankOfId(c.id) === r).length);
+ok(String(byRank) === '30,60,45,16', `ランク構成が 初級30・中級60・上級45・伝説16（実測 ${byRank}）`);
+ok([2,3,5,7,11].every(d => E.ROSTER % d !== 0), `名簿数 ${E.ROSTER} が素数（基点IDがターンごとに潰れないため）`);
+ok(E.CHARACTERS.every(c => new Set(c.factions).size === c.factions.length), '同じ勢力を重複して持つ人物がいない');
+ok([...E.TIE_GRAPH].every(([k, vs]) => [...vs].every(v => E.TIE_GRAPH.get(v)?.has(k))), '縁のグラフが双方向になっている');
 ok(E.CHARACTERS.every(c => c.correct.every(v => v >= 0 && v <= 5)), '正解の動機型が0〜5に収まる');
 ok(E.CHARACTERS.every(c => c.factions.every(f => f >= 0 && f <= 4)), '勢力が0〜4に収まる');
 ok(E.CHARACTERS.every(c => c.name && c.nick && c.desc), '全員に名・二つ名・情勢描写がある');
@@ -190,6 +195,33 @@ ok(E.CARDS.length === 5 && E.CARDS.every(f => f.length === 3 && f.every(cat => c
 ok(new Set(E.CARDS.flat(2)).size === 90, 'カード本文に重複がない');
 ok(Object.keys(E.TIES).every(k => (E.TIES[k] || []).every(v => E.CHAR_BY_ID.has(+v) && +v !== +k)),
    '史実の結びつきが実在IDを指し、自己参照がない');
+
+/* --- 7b. 名簿のカバー率 --------------------------------------------------- */
+head('7b. 151名がどれだけ盤面に出てくるか（1000局）');
+{
+  const seen = new Set(); const per = []; const introSeen = new Map(); let introTurns = 0;
+  for (let seed = 1; seed <= 1000; seed++) {
+    const rnd = E.mulberry32(seed * 7919), target = Math.floor(rnd() * 5);
+    let st = E.createState(seed); const mine = new Set();
+    while (!st.finished) {
+      const m = E.meetingList(st);
+      const slots = m.intro ? [...m.normal, m.intro] : m.normal;
+      if (m.intro) { introSeen.set(m.intro, (introSeen.get(m.intro) || 0) + 1); introTurns++; }
+      for (const id of slots) { seen.add(id); mine.add(id); }
+      const charId = slots.find(id => E.CHAR_BY_ID.get(id).factions.includes(target)) ?? slots[0];
+      const c = E.CHAR_BY_ID.get(charId), isT = c.factions.includes(target);
+      st = E.resolve(st, { charId, stance: isT ? 'support' : 'convert',
+                           ownF: isT ? target : c.factions[0], argueF: target, cards: c.correct.slice() }).next;
+    }
+    per.push(mine.size);
+  }
+  const avg = per.reduce((a, b) => a + b, 0) / per.length;
+  const top4 = [...introSeen].sort((a, b) => b[1] - a[1]).slice(0, 4).reduce((a, b) => a + b[1], 0) / introTurns;
+  console.log(`  1局あたりの異なり人数 平均 ${avg.toFixed(1)} 名 / 1000局の延べ登場 ${seen.size} 名 / 紹介枠の異なり ${introSeen.size} 名`);
+  ok(seen.size === 151, `1000局で151名全員が登場する（実測 ${seen.size}名）`);
+  ok(introSeen.size >= 60, `紹介枠に60名以上が現れる（実測 ${introSeen.size}名）`);
+  ok(top4 < 0.25, `紹介枠の上位4名の占有率が25%未満（実測 ${(top4 * 100).toFixed(0)}%）`);
+}
 
 /* --- 8. 熟練プレイでの到達可能性 ------------------------------------------ */
 head('8. 全エンディングに到達できるか（正解を引き当て続ける熟練プレイ）');
