@@ -52,6 +52,12 @@ pre.chart .u{color:var(--shu);font-weight:700}
 .yowa summary{color:var(--kin);opacity:.85}
 a.spot{color:var(--ai);text-decoration:none;border-bottom:1px dotted var(--ai)}
 a.spot:hover{background:var(--ai);color:var(--washi2);border-bottom-color:transparent}
+.interlude{border:2px solid var(--sumi);background:#fffdf7}
+.interlude .title{font-size:1.4rem;letter-spacing:.14em;text-align:center;margin:6px 0 14px}
+button.choice{display:block;width:100%;text-align:left;margin:8px 0;padding:12px 16px;font-size:.92rem}
+.fate{border-left:3px solid var(--line);padding:8px 12px;margin:8px 0;font-size:.9rem}
+.fate.won{border-left-color:var(--yuhan)}
+.fate.lost{border-left-color:var(--sumi2);opacity:.85}
 .tut{border:1px dashed var(--ai);background:#fbfaf5;padding:12px 14px;margin:10px 0;font-size:.86rem}
 .tut b{color:var(--ai)}
 .person .nm{font-size:1.05rem;font-weight:600;letter-spacing:.06em}
@@ -743,16 +749,160 @@ N(150,'水戸藩主。「烈公」と呼ばれた強硬な攘夷論者で、慶�
 N(151,'孝明天皇の子。父の急逝により十四歳で践祚し、王政復古から明治の全時代を生きた。','大河ドラマなどで幕末期の少年帝として描かれる', '明治神宮 東京'),
 ]);
 
+
+
+/* --- 後日談 ---------------------------------------------------------------
+   築いた人脈が、選んだ未来の中でどうなったか。
+   [勝ち組の後日談, 負け組の後日談] の2通り。勝敗は「その人物の勢力が
+   最終的に採られた側にいたか」で決まる。混沌エンドでは全員が負け側になる。
+   上級・伝説の61名は個別に、中級・初級は勢力別のひな型で語る。
+   ------------------------------------------------------------------------ */
+const F = (id, win, lose) => [id, [win, lose]];
+const FATES = new Map([
+F(91,'国父として遇され、面目を保ったまま静かに退いた。','面目を潰され、鹿児島で不平を鳴らし続けた。'),
+F(92,'太政大臣として、新しい政の頂に座った。','再び都を離れ、二度目の落魄を味わった。'),
+F(93,'若き将軍の名は、融和の象徴として長く記憶された。','大坂城で世を去った。その死とともに公武の縁も絶えた。'),
+F(94,'無刀のまま新政府に仕え、帝の側近として生涯を終えた。','野に下り、道場で若い者に剣と禅だけを教えた。'),
+F(95,'旧幕臣の暮らしを守る仕事を引き受け、恨まれながらそれを続けた。','氷川の家で、訪ねてくる者に皮肉を言い続けた。'),
+F(96,'商会は栄え、長崎の丘に洋館を構えた。','商会は破産した。それでも彼は日本を去らなかった。'),
+F(97,'英国の勝利として本国に報じ、以後の東アジア政策の基礎を作った。','本国に召還された。日本を見誤った男として記憶される。'),
+F(98,'フランスの影響は残り、横須賀に技師団が住み着いた。','賭けに敗れて召還され、外交官としての経歴を終えた。'),
+F(99,'艦隊を率いたまま、新体制の海軍を任された。','降伏し、数年の獄を経て、それでも大臣にまで返り咲いた。'),
+F(100,'長岡は焼けず、中立の藩として異例の自治を保った。','北越で傷を負い、峠を越える途中で息を引き取った。'),
+F(101,'兄とともに罪を免れ、桑名の家名を保った。','兄と別れ、箱館まで転戦した末に降伏した。'),
+F(102,'挙国一致の構想が実り、開明の老中としてその名が残った。','志半ばで病に倒れた。後を継ぐ者はいなかった。'),
+F(103,'維新の功臣として頂点に立ち、そして十年後、自らそこを降りた。','薩摩に帰り、私学校の若者に囲まれて時を待った。'),
+F(104,'内務卿として国家を組み上げ、紀尾井坂で斃れるまで手を止めなかった。','政の場を追われ、その設計図は誰にも引き継がれなかった。'),
+F(105,'新政府の要職に就いたが、三十六の若さで病没した。','藩に戻り、体を壊して早くに世を去った。'),
+F(106,'司法卿として近代法を敷き、その厳格さで敵を作った。','郷里で兵を挙げ、かつて自ら整えた法によって裁かれた。'),
+F(107,'勝利を見ることなく、下関の借家で二十七年の生を終えた。','病は進み、時代が動くのを寝床から聞いていた。'),
+F(108,'師の遺志が形になるのを見ぬまま、禁門の変で自刃した。','同じく自刃した。時代は彼を追い越していった。'),
+F(109,'池田屋で果てた。その死が長州を動かしたと言う者もいる。','池田屋で果てた。その名を覚えている者は、もう多くない。'),
+F(110,'東征大総督として江戸へ入り、皇族の重みを示した。','宮家の一人として、政の外に置かれた。'),
+F(111,'関白として、朝儀の頂に戻った。','政変で職を解かれ、以後は出仕しなかった。'),
+F(112,'板挟みの日々は終わり、家格は保たれた。','双方から責められた末に隠居した。'),
+F(113,'若き宮の甥として、挙兵の功を認められた。','逃亡先の長門で、味方の手にかかって殺された。'),
+F(114,'その志は子の実美が継ぎ、朝廷の柱となった。','安政の弾圧で出家を強いられ、失意のうちに没した。'),
+F(115,'開拓使長官として、北の大地に赴いた。','七卿落ちの記憶を抱えたまま、政の中枢には戻れなかった。'),
+F(116,'その先見は認められ、開国の思想的な父と呼ばれた。','京の三条木屋町で斬られた。攘夷派の刃だった。'),
+F(117,'交渉家としての手腕は、新体制でも用いられた。','江戸開城の日、拳銃で自らの生を終えた。'),
+F(118,'条約に署名した男として、開国の功労者に数えられた。','井伊に疎まれて失脚し、失意のうちに四十四で没した。'),
+F(119,'勅許を得た老中として、その名誉は回復された。','勅許を得られず失脚し、佐倉で静かに余生を送った。'),
+F(120,'西洋砲術の祖として顕彰され、その技は陸軍に受け継がれた。','投獄の記憶を抱えたまま、誰にも省みられずに没した。'),
+F(121,'幕府陸軍の指揮官から、新体制の技術官僚へと転じた。','箱館で降伏し、獄を出た後は学習院長として若者を教えた。'),
+F(122,'築いた五稜郭は無傷で残り、彼は大給恒と名を改めて赤十字を興した。','城は使われぬまま残った。彼は名を変え、人を助ける仕事に移った。'),
+F(123,'権力の座に戻った。その苛烈さは、以前のままだった。','幽閉のまま維新を迎え、赦されて後も誰も訪ねてこなかった。'),
+F(124,'和平の使者としての功が認められ、新政府に出仕した。','箱館まで従い、降伏の後は静かに書を読んで暮らした。'),
+F(125,'学問で異国を退けた儒者として、その交渉録は長く読まれた。','時代は学問の外で動いた。その名分論は誰の耳にも届かなくなった。'),
+F(126,'四賢侯の一人として、新体制の相談役に迎えられた。','宇和島に戻り、招いた技術者たちの行方を気にかけていた。'),
+F(127,'陸軍を作り上げ、元老として長く政を握った。','軍功を立てる場を失い、身分の壁は最後まで越えられなかった。'),
+F(128,'初代の内閣総理大臣となり、憲法を起草した。','足軽の子という出自は覆らず、才は用いられずに終わった。'),
+F(129,'使節団に随行して欧州を見、帰ってなお主の側にいた。','主に従って城山にこもり、最後まで銃を置かなかった。'),
+F(130,'砲兵から総司令官へ。その名は次の世紀の戦史に残る。','砲台の設計者として終わり、戦場に立つ機会はなかった。'),
+F(131,'桐野利秋と名を改め、陸軍少将にまで昇った。','城山で西郷とともに死んだ。学のなさを、最後まで恥じていた。'),
+F(132,'その歌は、志士たちに詠み継がれた。','京の獄で、火に巻かれて死んだ。'),
+F(133,'父東湖の名に恥じぬ働きと評された。','雪の中を進み、加賀で降り、二十三で首を落とされた。'),
+F(134,'老将の名は水戸に残り、天狗党は義軍と呼ばれた。','敦賀で斬られた。三百五十余名が、ともに首を落とされた。'),
+F(135,'その純粋さは、薩摩の若者に語り継がれた。','寺田屋で同志に討たれた。相手も薩摩の男だった。'),
+F(136,'攘夷の意志は国是となり、その名は神格化された。','若くして急逝した。毒殺を疑う声が、長く消えなかった。'),
+F(137,'降嫁は無駄ではなかったと、後の世に評された。','徳川家の存続を嘆願する日々を送り、三十一で世を去った。'),
+F(138,'日本を開いた男として、母国で英雄となった。','開国は成らず、艦隊は空しく去った。'),
+F(139,'通商条約は根づき、その粘りは外交史の教科書に載った。','条約は破棄され、下田の寺を去るほかなかった。'),
+F(140,'静かに権を返し、その後の六十年を写真と狩猟に費やした。','朝敵とされ、謹慎の日々の末に赦された。多くを語らなかった。'),
+F(141,'徳川家を守り抜き、大奥の主として最後まで気位を保った。','家の名を守るための嘆願に生涯を費やし、四十九で没した。'),
+F(142,'維新三傑の一人として制度を整え、心労のうちに早世した。','桂の名を捨てた意味を問い続けたまま、政の外に置かれた。'),
+F(143,'集成館は動き続け、その構想は次の世代が完成させた。','急死した。集めた技術者たちは、散り散りになった。'),
+F(144,'塾の教えは国を作った。門下から総理大臣が二人出た。','二十九で首を落とされた。『留魂録』だけが残った。'),
+F(145,'船中八策は形になり、彼は海運の仕事へ戻っていった。','近江屋の二階で斬られた。誰が下手人かは、いまも定まらない。'),
+F(146,'政事総裁職としての構想が実り、賢侯の名を確かなものにした。','福井に戻り、集めた人材が散っていくのを見ていた。'),
+F(147,'その国是は、新政府の柱となった。','京で暗殺された。開国を説いたことが、殺される理由だった。'),
+F(148,'独断の責は問われず、秩序を守った大老として評価された。','桜田門外で首を取られた。雪の朝だった。'),
+F(149,'「そうせい」と言い続けた男の下から、国を作る者が何人も出た。','家臣たちの行き着いた先を見届け、静かに隠居した。'),
+F(150,'烈公の攘夷は国是となり、水戸学は正統となった。','幽閉のうちに没し、水戸は自らの内で割れ続けた。'),
+F(151,'少年帝は、自らの名を冠した時代を生きることになる。','周囲の言葉に流されるまま、政の外に置かれた。'),
+]);
+/* 中級・初級は勢力ごとのひな型で語る */
+const FATE_TEMPLATE = [
+  ['朝廷に連なる末席を得て、望んだとおりの静かな日々を送った。','御所の灯が遠ざかるのを、ただ見ているほかなかった。'],
+  ['開いた港とともに身を立て、異国の言葉を話す子を持った。','港は閉じ、それまでの伝手はすべて役に立たなくなった。'],
+  ['秩序は守られ、その禄は次の代にも受け継がれた。','徳川の名とともに職を失い、刀を売って商いを始めた。'],
+  ['藩の名が天下に通じるようになり、その末端で仕事を得た。','藩は消え、県になった。自分が何者だったかを説明できなくなった。'],
+  ['振るった刃は義挙と呼ばれ、その名は志士の列に加えられた。','時代は刃を必要としなくなり、その手だけが残された。'],
+];
+/* エンディングで採られた勢力の集合 */
+function winningFactions(ending){
+  if (ending.kind === 'solo') return [ending.faction];
+  if (ending.kind === 'combo') return ending.pair.slice();
+  return [];
+}
+function fateOf(charId, winners){
+  const ch = CHAR_BY_ID.get(charId);
+  const won = ch.factions.some(f => winners.includes(f));
+  const pair = FATES.get(charId) || FATE_TEMPLATE[ch.factions[0]];
+  return { won, text: pair[won ? 0 : 1] };
+}
+
+/* --- 幕間「政変」 ---------------------------------------------------------
+   第8ターンの開始時に一度だけ起きる。その時点の上位2勢力の組合せで事件が決まる。
+   実測では上位2勢力は第5ターンには固まっているので、幕間はそのまま結末の予兆になる。
+   選択肢は正解のない価値観の問いで、盤面をわずかに動かし、後日談の語り口を変える。
+   ------------------------------------------------------------------------ */
+const INTERLUDES = {
+'0+1':{title:'条約勅許',scene:'禁裏の門前に攘夷派の公卿が座り込んでいる。条約に勅許を出すか否か、帝の裁可は今夜に迫った。勅許が出れば開国は正統になり、出なければ幕府は不義の側に立たされる。',
+ opts:[{label:'勅許を勝ち取るべく、公卿を一人ずつ切り崩す',res:'夜を徹して説いて回った。朝、門前の座り込みは半分に減っていた。開国は「朝廷が認めたもの」になる。',d:[0,3,0,0,-2],tag:'勅許を勝ち取った'},
+       {label:'勅許を待たず、幕府の責任で調印させる',res:'幕府は独断で判を押した。港は開いたが、「勅許なき条約」という一点が以後ずっと政敵の刃になる。',d:[-2,3,1,0,0],tag:'勅許を待たなかった'},
+       {label:'今回は退き、帝の意が変わるのを待つ',res:'調印は先送りされた。列強は苛立ったが、朝廷との縁は切れずに済んだ。',d:[3,-1,0,0,0],tag:'帝の意を待った'}]},
+'0+2':{title:'大政奉還の噂',scene:'将軍が政を朝廷に返上するという噂が江戸城を駆けている。返せば公武の縁は保たれるが、徳川の権は形だけになる。返さねば、朝廷は雄藩に傾く。',
+ opts:[{label:'返上を勧める。権を手放してこそ徳川は残る',res:'将軍は静かに頷いた。血を流さずに時代が切り替わり、徳川家は一大名として生き延びる。',d:[3,0,1,0,0],tag:'大政奉還を勧めた'},
+       {label:'返上を止める。三百年の職を軽々に捨てるな',err:'',res:'幕府は権を握り続けた。朝廷との溝は深まり、雄藩がその隙間に入り込んでくる。',d:[-1,0,4,0,0],tag:'大政奉還を止めた'},
+       {label:'返上させたうえで、議会の議長に据える',res:'形は返し、実は残す。この折衷案が後の立憲体制の原型になったと、後世の歴史家は書く。',d:[2,0,2,0,-1],tag:'返して残す道を選んだ'}]},
+'0+3':{title:'参預会議の決裂',scene:'朝廷のもとに集まった諸侯の合議が、島津久光と一橋慶喜の正面衝突で瓦解しかけている。座を保つか、割るか。',
+ opts:[{label:'久光を立てる。雄藩なくして合議は成らぬ',res:'慶喜が席を蹴った。合議は雄藩の会議として続き、幕府は蚊帳の外に置かれる。',d:[1,0,-2,4,0],tag:'雄藩を立てた'},
+       {label:'慶喜を立てる。幕府を外せば合議は絵に描いた餅だ',res:'久光は薩摩へ帰った。合議は形を保ったが、最も力のある藩を欠いたまま空転する。',d:[4,0,1,-2,0],tag:'幕府を立てた'},
+       {label:'双方を降ろし、合議そのものを制度にする',res:'個人の面目を潰す代わりに、席は制度として残った。誰が来ても座が回る仕組みが生まれる。',d:[3,0,0,2,-1],tag:'制度を選んだ'}]},
+'0+4':{title:'攘夷実行の期日',scene:'帝が定めた攘夷実行の期日が明日に迫った。実行すれば列強の艦隊が来る。しなければ、帝の信を永久に失う。',
+ opts:[{label:'期日どおり砲を撃つ',res:'関門海峡で砲声が上がった。数日後、四国艦隊が報復に現れる。それでも帝の信は揺るがなかった。',d:[2,-3,0,0,4],tag:'砲を撃った'},
+       {label:'撃たぬまま、帝に事情を奏上する',res:'長い奏上の末、期日は延ばされた。攘夷派は臆病と罵ったが、港は焼けずに済んだ。',d:[3,1,0,0,-2],tag:'奏上して延ばした'},
+       {label:'形だけ撃ち、当たらぬよう外す',res:'砲は撃たれ、弾は海に落ちた。双方の面目は立ったが、この欺瞞を見抜いた者が幾人かいる。',d:[2,0,0,0,1],tag:'形だけ撃った'}]},
+'1+2':{title:'仏国の担保',scene:'フランスが製鉄所と艦隊の資金を出すという。ただし蝦夷地の鉱山を担保に寄越せと。断れば近代化は止まり、呑めば国土に他国の爪がかかる。',
+ opts:[{label:'呑む。今は力を買う時だ',res:'資金は流れ、造船所は動き出した。担保の証文は金庫の奥にしまわれ、誰も口にしなくなる。',d:[0,4,3,0,-2],tag:'担保を呑んだ'},
+       {label:'断る。国土を質に入れる政に未来はない',res:'資金は止まり、計画は数年遅れた。だが後年、租借地を持たぬ唯一の国と呼ばれることになる。',d:[1,-1,2,1,0],tag:'担保を断った'},
+       {label:'英国にも同じ話を持ちかけ、競わせる',res:'二国を天秤にかけた。条件は改善し、担保は外れた。ただし両国の公使に、油断ならぬ男と覚えられた。',d:[0,3,1,1,-1],tag:'列強を競わせた'}]},
+'1+3':{title:'京へ迫る兵',scene:'薩長の兵が京へ迫っている。今なら幕府を無血で降ろせるかもしれない。だが機を逃せば、この国は内乱に落ちる。',
+ opts:[{label:'一気に押す。迷えば相手が立て直す',res:'兵は京を制した。抵抗は小さく、しかし降った者たちの恨みは長く残る。',d:[0,1,-3,4,1],tag:'一気に押した'},
+       {label:'使者を立て、降伏の条件を先に示す',res:'条件が示されたことで、多くの藩が戦わずに降った。血は流れず、旧幕臣の何人かは新政府に加わる。',d:[1,3,-1,3,-1],tag:'条件を先に示した'},
+       {label:'兵を止め、諸侯の合議に委ねる',res:'進軍は止まった。時間はかかり、機は逃したかもしれない。だが誰も朝敵にならずに済んだ。',d:[2,2,1,1,-2],tag:'兵を止めた'}]},
+'1+4':{title:'居留地焼き討ち',scene:'攘夷派の同志が横浜居留地の焼き討ちを企てている。止めれば同志を失い、止めねば艦隊が江戸湾に並ぶ。',
+ opts:[{label:'計画を潰す。国を焼かせはしない',res:'密告に近い形で計画は潰れた。港は守られ、あなたは同志の何人かから裏切り者と呼ばれる。',d:[1,4,0,0,-3],tag:'計画を潰した'},
+       {label:'見過ごす。志を持つ者を売れはしない',res:'居留地は焼けた。艦隊が来て、賠償金が国庫を削った。だが同志はあなたを信じ続けている。',d:[-1,-2,0,0,4],tag:'同志を選んだ'},
+       {label:'標的を変えさせ、人の出ない倉庫だけを焼かせる',res:'火は上がり、死者は出なかった。攘夷の意気は示され、列強も戦端は開かなかった。危うい綱渡りである。',d:[0,1,0,0,3],tag:'綱を渡った'}]},
+'2+3':{title:'最後の卓',scene:'幕府と雄藩が同じ卓に着く最後の機会が来た。どちらかが席を蹴れば、この国は戦になる。',
+ opts:[{label:'徳川に議長の席を用意して座らせる',res:'徳川は最大の一人として卓に残った。倒すべき敵がいなくなり、戦の理由が消える。',d:[1,0,4,2,-2],tag:'徳川を卓に残した'},
+       {label:'徳川を対等な一藩として扱う',res:'将軍という語は消え、大名の一人になった。屈辱と引き換えに、家は残った。',d:[0,1,1,4,-1],tag:'徳川を一藩とした'},
+       {label:'卓を蹴る。妥協は次の戦を生むだけだ',res:'交渉は決裂した。あなたの読みが正しかったかは、その後の十年が答える。',d:[-2,0,3,3,2],tag:'卓を蹴った'}]},
+'2+4':{title:'幕府の攘夷布告',scene:'幕府が攘夷を引き受けると布告した。討幕を叫んできた志士たちは、矛を収めるか、なお幕府を討つか。',
+ opts:[{label:'矛を収める。目的が同じなら敵ではない',res:'志士の多くが幕府の兵となった。攘夷という一点で、最も遠かった二つが握手する。',d:[0,-2,4,0,3],tag:'矛を収めた'},
+       {label:'なお討つ。幕府の攘夷など時間稼ぎだ',res:'布告は口先だと見抜いた者たちが、なお刃を研いだ。幕府は内と外の 両方から攻められる。',d:[0,0,-1,2,4],tag:'なお討った'},
+       {label:'布告を実行させる。言った以上はやらせる',res:'幕府は退けなくなった。港は閉じ、艦隊が来る。あなたは幕府を自らの言葉で縛った。',d:[1,-3,3,0,3],tag:'言葉で縛った'}]},
+'3+4':{title:'密勅の真偽',scene:'討幕の密勅が下ったという。だが勅の体裁を疑う声もある。偽と知って掲げるか、真として奉じるか、退けるか。',
+ opts:[{label:'真として奉じ、ただちに旗を揚げる',res:'官軍の旗が翻った。勝てば正義になる、という賭けにあなたは乗った。',d:[0,0,-2,4,3],tag:'密勅を奉じた'},
+       {label:'疑わしいと退け、正式な詔を待つ',res:'旗揚げは遅れた。だが後に下った詔は疑いようのないもので、あなたの側は最後まで賊と呼ばれずに済んだ。',d:[3,0,-1,3,0],tag:'正式な詔を待った'},
+       {label:'真偽を問わず、事実として押し通す',res:'誰も真偽を口にしなくなった。歴史はしばしば、こうして書き換わる。',d:[-1,0,-2,4,3],tag:'真偽を問わなかった'}]},
+};
+
 /* --- 状態 ---------------------------------------------------------------- */
 const MAX_TURN = 10, GOAL = 30, CAP = 40, COMBO_MIN = 10;
 /* 相手を「探る」と3つの正解がすべて分かるが、手の内を明かした分だけ影響力が落ち、
    その交渉の獲得が1下がる。使えるのは1局に PROBE_LIMIT 回まで。
    回数を切らないと、探り続けるだけで勝ててしまい賭けが消える。 */
 const PROBE_LIMIT = 4;
+/* 幕間「政変」が起きるターン。この時点の上位2勢力の組合せで事件が決まる。 */
+const INTERLUDE_TURN = 8;
 
 function createState(seed){
   return { seed: seed >>> 0, turn: 1, currents:[0,0,0,0,0],
-           contacts:[], banned:[], lastLen:0, probesUsed:0, actions:[], finished:false };
+           contacts:[], banned:[], lastLen:0, probesUsed:0, interlude:null,
+           actions:[], finished:false };
 }
 const totalOf = st => st.currents.reduce((a,b)=>a+b,0);
 const eraOf   = st => eraOfTotal(totalOf(st));
@@ -895,6 +1045,7 @@ function resolve(st, action){
   const next = {
     seed: st.seed, turn: st.turn + 1, currents: cur, contacts, banned,
     lastLen: len, probesUsed: st.probesUsed + (probed ? 1 : 0),
+    interlude: st.interlude,
     actions: st.actions.concat([action]), finished: false,
   };
   next.finished = next.turn > MAX_TURN || cur.some(v => v >= CAP);
@@ -908,6 +1059,29 @@ function resolve(st, action){
     verdict: succeeded ? (score === 3 ? '大成功' : '成功') : ['決裂','失敗','失敗','失敗'][score],
     contactAdded: succeeded, bannedNow: score === 0,
   }};
+}
+
+/* --- 幕間 ---------------------------------------------------------------- */
+/* 上位2勢力の組合せ。単独で突出していても2番目まで見て事件を決める。 */
+function topPairKey(currents){
+  const o = [0,1,2,3,4].sort((a,b) => currents[b] - currents[a] || a - b);
+  return [o[0], o[1]].sort((x,y) => x - y).join('+');
+}
+/* 第8ターンの開始時に一度だけ。未消化なら幕間データを返す */
+function pendingInterlude(st){
+  if (st.finished || st.turn !== INTERLUDE_TURN || st.interlude) return null;
+  const key = topPairKey(st.currents);
+  return Object.assign({ key }, INTERLUDES[key]);
+}
+function applyInterlude(st, choice){
+  const iv = pendingInterlude(st);
+  if (!iv) return st;
+  const o = iv.opts[choice];
+  const cur = st.currents.map((v, i) => clamp(v + o.d[i], 0, CAP));
+  return Object.assign({}, st, {
+    currents: cur,
+    interlude: { key: iv.key, choice, tag: o.tag, title: iv.title },
+  });
 }
 
 /* --- エンディング判定 ---------------------------------------------------- */
@@ -929,47 +1103,54 @@ function evaluateEnding(st){
 }
 
 /* --- リプレイ / セーブ ---------------------------------------------------- */
-function replay(seed, actions){
+function replay(seed, actions, interludeChoice){
   let st = createState(seed);
   const reports = [];
   for (const a of actions){
     if (st.finished) break;
+    /* 幕間は第8ターンの交渉より前に解決する */
+    if (interludeChoice != null && pendingInterlude(st)) st = applyInterlude(st, interludeChoice);
     const r = resolve(st, a);
     st = r.next; reports.push(r.report);
   }
   return { state: st, reports };
 }
 function encodeSave(st){
-  return 'IR3:' + st.seed + ':' + st.actions
+  return 'IR4:' + st.seed + ':' + st.actions
     .map(a => [a.charId, a.stance === 'support' ? 0 : 1, a.ownF, a.argueF, a.cards.join(''),
                a.probed ? 1 : 0].join(','))
-    .join(';');
+    .join(';') + (st.interlude ? '#' + st.interlude.choice : '');
 }
 function decodeSave(code){
   const s = String(code).trim();
-  if (!s.startsWith('IR3:')) throw new Error(/^IR[12]:/.test(s)
+  /* IR3 は幕間の追加より前の版。幕間を「未選択」として扱えばそのまま再現できる。 */
+  if (!/^IR[34]:/.test(s)) throw new Error(/^IR[12]:/.test(s)
     ? '旧版の保存コードです。名簿と判定ルールが変わったため再現できません'
     : 'コードの形式が違います');
   const parts = s.slice(4).split(':');
   const seed = parseInt(parts[0], 10) >>> 0;
-  const body = parts.slice(1).join(':');
+  const raw = parts.slice(1).join(':');
+  const hash = raw.indexOf('#');
+  const interludeChoice = hash >= 0 ? +raw.slice(hash + 1) : null;
+  const body = hash >= 0 ? raw.slice(0, hash) : raw;
   const actions = !body ? [] : body.split(';').filter(Boolean).map(chunk => {
     const [c, s2, o, f, k, h] = chunk.split(',');
     return { charId:+c, stance: +s2 === 0 ? 'support' : 'convert',
              ownF:+o, argueF:+f, cards: Array.from(k).map(Number), probed: +(h || 0) === 1 };
   });
-  return { seed, actions };
+  return { seed, actions, interludeChoice };
 }
 function hashState(st){
   const s = JSON.stringify([st.seed, st.turn, st.currents, st.contacts, st.banned,
-                            st.lastLen, st.probesUsed, st.finished]);
+                            st.lastLen, st.probesUsed, st.interlude, st.finished]);
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
   return h.toString(16).padStart(8, '0');
 }
 
 const ENGINE = { mulberry32, streamOf, FACTIONS, ERAS, RANKS, CHARACTERS, CHAR_BY_ID, CARDS, CATS,
-  TIES, TIE_GRAPH, QUESTIONS, REPLIES, SMALLTALK, NOTES, ENDINGS, MAX_TURN, GOAL, CAP, COMBO_MIN, PROBE_LIMIT, ROSTER, OPPOSED, WARY_LINE, waryOf, createState, totalOf, eraOf, eraOfTotal, rankOfId, baseId,
+  TIES, TIE_GRAPH, QUESTIONS, REPLIES, SMALLTALK, NOTES, INTERLUDES, ENDINGS, MAX_TURN, GOAL, CAP, COMBO_MIN, PROBE_LIMIT, INTERLUDE_TURN, FATES, FATE_TEMPLATE, winningFactions, fateOf, ROSTER, OPPOSED, WARY_LINE, waryOf,
+  topPairKey, pendingInterlude, applyInterlude, createState, totalOf, eraOf, eraOfTotal, rankOfId, baseId,
   meetingList, introPick, cardOptions, composeArgument, resolve, evaluateEnding, replay,
   encodeSave, decodeSave, hashState };
 if (typeof globalThis !== 'undefined') globalThis.ENGINE = ENGINE;
@@ -983,7 +1164,8 @@ const E = ENGINE;
 let st = null;
 let ui = { screen:'title', charId:null, stance:null, ownF:null, argueF:null,
            picks:[null,null,null], probed:false, asked:null, chatted:[],
-           tutorialDone:false, opts:null, report:null, intro:false };
+           tutorialDone:false, interludePicked:null, interludeData:null,
+           opts:null, report:null, intro:false };
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fac = i => E.FACTIONS[i];
@@ -1062,12 +1244,14 @@ function viewTitle(){
   document.getElementById('start').onclick = () => {
     const v = parseInt(document.getElementById('seed').value, 10);
     st = E.createState(Number.isFinite(v) ? v : 1868);
-    ui.tutorialDone = false; ui.screen = 'meeting'; render();
+    ui.tutorialDone = false; ui.interludePicked = null; ui.interludeData = null;
+    ui.screen = 'meeting'; render();
   };
   document.getElementById('load').onclick = () => {
     try {
-      const { seed, actions } = E.decodeSave(document.getElementById('code').value);
-      st = E.replay(seed, actions).state;
+      const { seed, actions, interludeChoice } = E.decodeSave(document.getElementById('code').value);
+      st = E.replay(seed, actions, interludeChoice).state;
+      ui.interludePicked = null; ui.interludeData = null;
       ui.screen = st.finished ? 'ending' : 'meeting'; render();
     } catch (e){ document.getElementById('err').textContent = '読み込めません: ' + e.message; }
   };
@@ -1075,6 +1259,7 @@ function viewTitle(){
 
 /* --- 画面: 面会 ---------------------------------------------------------- */
 function viewMeeting(){
+  if (E.pendingInterlude(st) || ui.interludePicked !== null) return viewInterlude();
   const m = E.meetingList(st);
   const era = E.eraOf(st);
   const card = (id, isIntro) => {
@@ -1107,6 +1292,33 @@ function viewMeeting(){
     ui.picks = [null,null,null]; ui.probed = false; ui.asked = null; ui.chatted = [];
     ui.screen = 'stance'; render();
   });
+}
+
+/* --- 画面: 幕間「政変」 --------------------------------------------------- */
+function viewInterlude(){
+  const iv = ui.interludeData || E.pendingInterlude(st);
+  ui.interludeData = iv;
+  const picked = ui.interludePicked;
+  const body = picked === null
+    ? `<div class="row" style="display:block">${iv.opts.map((o, i) =>
+        `<button class="choice" data-pick="${i}">${esc(o.label)}</button>`).join('')}</div>
+       <div class="small" style="margin-top:10px;opacity:.7">正解はありません。どれを選ぶかが、あなたの立場です。</div>`
+    : `<div class="say" style="border-left-color:var(--shu)"><span class="q">「${esc(iv.opts[picked].label)}」</span><br>${
+        esc(iv.opts[picked].res)}</div>
+       <div class="row"><button class="primary" id="ilnext">続ける</button></div>`;
+  app.innerHTML = headerHTML() +
+    `<div class="panel interlude">
+      <div class="kind">幕間 ― 第${E.INTERLUDE_TURN}ターン</div>
+      <div class="title">『${esc(iv.title)}』</div>
+      <p>${esc(iv.scene)}</p>
+      ${body}
+    </div>` + (picked === null ? '' : chartHTML());
+  app.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => {
+    const i = +b.dataset.pick;
+    st = E.applyInterlude(st, i); ui.interludePicked = i; render();
+  });
+  const nx = document.getElementById('ilnext');
+  if (nx) nx.onclick = () => { ui.interludePicked = null; ui.interludeData = null; render(); };
 }
 
 /* --- 画面: 立場の決定 ----------------------------------------------------- */
@@ -1301,6 +1513,9 @@ function viewEnding(){
       <div class="title">『${esc(e.t)}』</div>
       <div class="kind" style="color:var(--sumi2)">${esc(e.s)}</div>
       ${e.p.map((para,i) => `<h3>${heads[i]}</h3><p>${esc(para)}</p>`).join('')}
+      ${st.interlude ? `<h3>あの夜の選択</h3><p>『${esc(st.interlude.title)}』において、あなたは<b>${
+        esc(st.interlude.tag)}</b>。その一手が、以後のすべての前提になった。</p>` : ''}
+      ${epilogueHTML(e)}
     </div>` + saveBoxHTML() +
     `<div class="row"><button class="primary" id="again">最初から</button></div>`;
   document.getElementById('again').onclick = () => { st = null; ui.screen = 'title'; render(); };
@@ -1311,6 +1526,26 @@ const CREDIT = `<hr><div class="small" style="text-align:center;opacity:.7;paddi
   本実装は原案のルールを、LLMを使わない決定論的プログラムとして再構成したものです。<br>
   史実を題材としたフィクションであり、人物像・勢力分類はゲーム上の解釈です。
 </div>`;
+
+/* 築いた人脈が、選んだ未来の中でどうなったか */
+function epilogueHTML(ending){
+  if (!st.contacts.length && !st.banned.length) return '';
+  const winners = E.winningFactions(ending);
+  const sorted = st.contacts.slice().sort((a, b) =>
+    E.rankOfId(b) - E.rankOfId(a) || a - b);
+  const shown = sorted.slice(0, 5), rest = sorted.slice(5);
+  const line = id => {
+    const c = E.CHAR_BY_ID.get(id), f = E.fateOf(id, winners);
+    return `<div class="fate ${f.won ? 'won' : 'lost'}">
+      <b>${esc(c.name)}</b><span class="tag ${fac(c.factions[0]).cls}">${fac(c.factions[0]).name}</span>
+      <span class="small" style="opacity:.6">${f.won ? 'あなたの側に' : 'あなたの外に'}</span><br>${esc(f.text)}</div>`;
+  };
+  return `<h3>その後の人々</h3>
+    ${shown.map(line).join('')}
+    ${rest.length ? `<p class="small">ほかに ${rest.map(id => esc(E.CHAR_BY_ID.get(id).name)).join('・')} が、あなたの名を覚えている。</p>` : ''}
+    ${st.banned.length ? `<p class="small" style="color:var(--shu)">${
+      st.banned.map(id => esc(E.CHAR_BY_ID.get(id).name)).join('・')} とは、ついに言葉が通じなかった。</p>` : ''}`;
+}
 
 function saveBoxHTML(){
   return `<div class="panel"><h2>保存 / 共有</h2>

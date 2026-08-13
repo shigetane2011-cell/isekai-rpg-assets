@@ -34,7 +34,12 @@ const pick = arr => arr[Math.floor(trnd() * arr.length)];
 function autoPlay(seed, rnd) {
   let st = E.createState(seed);
   const actions = [];
+  let interludeChoice = null;
   while (!st.finished) {
+    if (E.pendingInterlude(st)) {
+      interludeChoice = Math.floor(rnd() * 3);
+      st = E.applyInterlude(st, interludeChoice);
+    }
     const m = E.meetingList(st);
     const slots = m.intro ? [...m.normal, m.intro] : m.normal;
     const charId = slots[Math.floor(rnd() * slots.length)];
@@ -49,17 +54,17 @@ function autoPlay(seed, rnd) {
     actions.push(a);
     st = E.resolve(st, a).next;
   }
-  return { st, actions };
+  return { st, actions, interludeChoice };
 }
 
 /* --- 2. 完全リプレイ性 --------------------------------------------------- */
 head('2. 同じ seed + 同じ選択列 → 常に同じ盤面');
 let replayOk = true, endingSeen = new Map();
 for (let s = 1; s <= 300; s++) {
-  const { st, actions } = autoPlay(s, E.mulberry32(s * 7919));
-  const again = E.replay(s, actions).state;
+  const { st, actions, interludeChoice } = autoPlay(s, E.mulberry32(s * 7919));
+  const again = E.replay(s, actions, interludeChoice).state;
   if (E.hashState(st) !== E.hashState(again)) { replayOk = false; console.log('    seed', s, '不一致'); break; }
-  const third = E.replay(s, actions).state;
+  const third = E.replay(s, actions, interludeChoice).state;
   if (E.hashState(st) !== E.hashState(third)) { replayOk = false; break; }
   const e = E.evaluateEnding(st);
   endingSeen.set(e.t, (endingSeen.get(e.t) || 0) + 1);
@@ -72,7 +77,7 @@ let saveOk = true;
 for (let s = 1; s <= 60; s++) {
   const { st } = autoPlay(s, E.mulberry32(s * 31337));
   const dec = E.decodeSave(E.encodeSave(st));
-  if (E.hashState(E.replay(dec.seed, dec.actions).state) !== E.hashState(st)) { saveOk = false; break; }
+  if (E.hashState(E.replay(dec.seed, dec.actions, dec.interludeChoice).state) !== E.hashState(st)) { saveOk = false; break; }
 }
 ok(saveOk, '60局を encode → decode → replay して一致');
 
@@ -287,6 +292,83 @@ ok([...E.NOTES.keys()].filter(id => E.rankOfId(id) === 3).length === 16,
   ok([...E.NOTES.values()].every(v => !v.spot || v.spot.trim().length > 2), 'ゆかりの地の表記に空欄がない');
 }
 
+/* --- 5g. 幕間「政変」 ------------------------------------------------------ */
+head('5g. 第8ターンの幕間');
+{
+  const pairs = [];
+  for (let a = 0; a < 5; a++) for (let b = a + 1; b < 5; b++) pairs.push(`${a}+${b}`);
+  ok(pairs.every(k => E.INTERLUDES[k]), '2勢力の組合せ10通りすべてに幕間がある');
+  ok(pairs.every(k => E.INTERLUDES[k].opts.length === 3), 'どの幕間も選択肢が3つある');
+  ok(pairs.every(k => E.INTERLUDES[k].opts.every(o => o.d.length === 5 && o.res && o.tag)),
+     'すべての選択肢に増減・結果文・後日談用のタグがある');
+  ok(new Set(pairs.map(k => E.INTERLUDES[k].title)).size === 10, '幕間の題が10通りとも異なる');
+
+  /* 発火位置 */
+  let fired = 0, games = 0, before8 = 0;
+  for (let seed = 1; seed <= 200; seed++) {
+    let st = E.createState(seed); games++;
+    let seen = false;
+    while (!st.finished) {
+      const iv = E.pendingInterlude(st);
+      if (iv) { if (st.turn !== E.INTERLUDE_TURN) before8++; seen = true; st = E.applyInterlude(st, seed % 3); }
+      const m = E.meetingList(st), c = E.CHAR_BY_ID.get(m.normal[0]);
+      st = E.resolve(st, { charId: c.id, stance: 'support', ownF: c.factions[0],
+                           argueF: c.factions[0], cards: c.correct.slice(), probed: false }).next;
+    }
+    if (seen) fired++;
+  }
+  ok(fired === games, `全${games}局で幕間がちょうど1回起きる`);
+  ok(before8 === 0, `幕間が第${E.INTERLUDE_TURN}ターン以外で起きない`);
+}
+{
+  /* 保存・復元と旧版互換 */
+  const run = (seed, choice) => {
+    let st = E.createState(seed);
+    while (!st.finished) {
+      if (choice != null && E.pendingInterlude(st)) st = E.applyInterlude(st, choice);
+      const m = E.meetingList(st), c = E.CHAR_BY_ID.get(m.normal[0]);
+      st = E.resolve(st, { charId: c.id, stance: 'support', ownF: c.factions[0],
+                           argueF: c.factions[0], cards: c.correct.slice(), probed: false }).next;
+    }
+    return st;
+  };
+  let rt = true, compat = true, moved = 0;
+  for (let seed = 1; seed <= 100; seed++) {
+    for (const ch of [0, 1, 2]) {
+      const st = run(seed, ch), d = E.decodeSave(E.encodeSave(st));
+      if (E.hashState(E.replay(d.seed, d.actions, d.interludeChoice).state) !== E.hashState(st)) rt = false;
+    }
+    const off = run(seed, null);
+    if (E.hashState(run(seed, 1)) !== E.hashState(off)) moved++;
+    const d3 = E.decodeSave('IR3:' + E.encodeSave(off).slice(4));
+    if (E.hashState(E.replay(d3.seed, d3.actions, d3.interludeChoice).state) !== E.hashState(off)) compat = false;
+  }
+  ok(rt, '幕間の選択を含む保存コードが往復で一致する（100局×3選択）');
+  ok(compat, '旧版(IR3)の保存コードが、幕間なしのまま完全に再現される');
+  ok(moved === 100, '幕間の選択は必ず盤面を動かす（飾りになっていない）');
+}
+
+/* --- 5h. 後日談 ------------------------------------------------------------ */
+head('5h. 後日談');
+ok([...E.FATES.keys()].every(id => E.CHAR_BY_ID.has(id)), '後日談が実在する人物IDだけを指している');
+ok(E.CHARACTERS.filter(c => E.rankOfId(c.id) >= 2).every(c => E.FATES.has(c.id)),
+   `上級・伝説の61名は全員に個別の後日談がある`);
+ok(E.CHARACTERS.every(c => {
+  const w = E.fateOf(c.id, c.factions), l = E.fateOf(c.id, [9]);
+  return w.text && l.text && w.text !== l.text && w.won === true && l.won === false;
+}), '151名全員について、勝ち側と負け側で異なる後日談が引ける');
+ok(E.FATE_TEMPLATE.length === 5 && E.FATE_TEMPLATE.every(t => t.length === 2),
+   '中級・初級のひな型が5勢力 × 勝敗の2通り揃っている');
+{
+  const solo = E.winningFactions({ kind:'solo', faction:2 });
+  const combo = E.winningFactions({ kind:'combo', pair:[1,3] });
+  const chaos = E.winningFactions({ kind:'chaos' });
+  ok(String(solo) === '2' && String(combo) === '1,3' && chaos.length === 0,
+     '採られた勢力が エンド種別ごとに正しく決まる（混沌では全員が負け側）');
+  ok(E.fateOf(103, [3]).text !== E.fateOf(103, [2]).text,
+     '西郷隆盛の後日談が、雄藩が採られたか否かで変わる');
+}
+
 /* --- 6. エンディング分岐 ------------------------------------------------- */
 head('6. エンディング分岐');
 const mk = cur => E.evaluateEnding({ currents: cur });
@@ -364,6 +446,7 @@ head('8. 全エンディングに到達できるか（正解を引き当て、�
 function strategist(seed, targets) {
   let st = E.createState(seed), t = 0;
   while (!st.finished) {
+    if (E.pendingInterlude(st)) st = E.applyInterlude(st, 0);
     const m = E.meetingList(st);
     const slots = m.intro ? [...m.normal, m.intro] : m.normal;
     const target = targets[t++ % targets.length];
