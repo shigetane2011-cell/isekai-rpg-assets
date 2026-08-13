@@ -139,8 +139,10 @@ ok(probe(1, 1, 'support', 0, 0).gain === 0 && probe(1, 1, 'support', 0, 0).banne
 const pre = probe(1, 145, 'support', 1, 3);
 ok(pre.premature && pre.gain === 4, '初級期に伝説級 → 時期尚早でボーナス無効（+4のまま）');
 const cv3 = atEra(8, 1, 3, 'convert', 4), cv2 = atEra(8, 1, 2, 'convert', 4);
-ok(cv3.delta[4] === 4 && cv3.delta[0] === -2, '転向・大成功 → 主張属性+4 / 相手属性-2');
-ok(cv2.delta[4] === 2 && cv2.delta[0] === -1, '転向・成功 → 主張属性+2 / 相手属性-1');
+ok(cv3.delta[4] === 4 && cv3.delta[0] === -2, '転向・3枚一致 → 主張属性+4 / 相手属性-2');
+ok(cv2.gain === 0 && cv2.delta.every(v => v === 0), '転向・2枚一致 → 通らない（全か無かの賭け）');
+ok(cv2.contactAdded === false, '転向・2枚一致では人脈にも加わらない');
+ok(atEra(8, 1, 2, 'support', 0).gain === 2, '支持・2枚一致は通る（転向とは非対称）');
 const floorTest = E.resolve(Object.assign(E.createState(1), { currents: [0,0,0,0,0] }),
   { charId: 1, stance: 'convert', ownF: 0, argueF: 4, cards: E.CHAR_BY_ID.get(1).correct });
 ok(floorTest.next.currents[0] === 0, '相手属性が0のとき転向で減らしてもマイナスにならない');
@@ -156,11 +158,58 @@ function atEra(total, charId, score, stance = 'support', argueF = null) {
 }
 ok(atEra(12, 47, 3).gain === 5, '中級期に中級級・大成功 → +5（+1補正）');
 ok(atEra(12, 47, 2).gain === 3, '中級期に中級級・成功 → +3（+1補正）');
-ok(atEra(26, 103, 3).gain === 6, '上級期に上級級・大成功 → +6（+2補正）');
-ok(atEra(26, 103, 1).penalty === 1, '上級期に上級級・失敗 → 時勢-1');
-ok(atEra(40, 144, 3).gain === 8, '伝説期に伝説級・大成功 → +8（2倍）');
-ok(atEra(40, 144, 1).penalty === 3, '伝説期に伝説級・失敗 → 時勢-3');
-ok(atEra(12, 144, 1).penalty === 0, '時期尚早なら失敗ペナルティも無効');
+ok(atEra(26, 91, 3).gain === 6, '上級期に上級級・大成功 → +6（+2補正）');
+ok(atEra(26, 91, 1).penalty === 1, '上級期に上級級・失敗 → 時勢-1');
+ok(atEra(40, 136, 3).gain === 8, '伝説期に伝説級・大成功 → +8（2倍）');
+ok(atEra(40, 136, 1).penalty === 3, '伝説期に伝説級・失敗 → 時勢-3');
+ok(atEra(12, 136, 1).penalty === 0, '時期尚早なら失敗ペナルティも無効');
+ok(atEra(26, 103, 3).waryBy === 0 && atEra(26, 103, 3).gain === 4,
+   '公武26を掲げていると雄藩の西郷は警戒し、上級の+2補正を受け取れない');
+
+/* --- 5b. 警戒（対立勢力への旗色） ---------------------------------------- */
+head('5b. 旗色を鮮明にすると対立勢力の人物が警戒するか');
+ok(E.OPPOSED.every((foes, f) => foes.every(o => E.OPPOSED[o].includes(f))), '対立関係が対称になっている');
+ok(E.OPPOSED.every((foes, f) => !foes.includes(f)), '自分自身を対立相手にしていない');
+{
+  const below = [0,0,0,0,0]; below[2] = E.WARY_LINE - 1;   // 佐幕を閾値の一歩手前まで
+  const at    = [0,0,0,0,0]; at[2]    = E.WARY_LINE;       // 閾値ちょうど
+  const yuhan = E.CHARACTERS.find(c => c.factions.length === 1 && c.factions[0] === 3).id; // 雄藩の人物
+  ok(E.waryOf(below, yuhan) < 0, `佐幕が${E.WARY_LINE - 1}なら雄藩の人物はまだ警戒しない`);
+  ok(E.waryOf(at, yuhan) === 2,  `佐幕が${E.WARY_LINE}に達すると雄藩の人物が警戒する`);
+  const kobu = E.CHARACTERS.find(c => c.factions.length === 1 && c.factions[0] === 0).id;
+  ok(E.waryOf(at, kobu) < 0, '対立関係にない勢力の人物は警戒しない（佐幕と公武は両立する）');
+
+  const run = (cur, id, score, stance = 'support') => {
+    const st = Object.assign(E.createState(1), { currents: cur.slice() });
+    const c = E.CHAR_BY_ID.get(id), cards = c.correct.slice();
+    for (let k = score; k < 3; k++) cards[k] = [0,1,2,3,4,5].find(m => m !== c.correct[k]);
+    return E.resolve(st, { charId: id, stance, ownF: c.factions[0],
+                           argueF: stance === 'support' ? c.factions[0] : 2, cards }).report;
+  };
+  ok(run(below, yuhan, 3).verdict === '大成功', '警戒されていなければ3枚一致は大成功');
+  ok(run(at, yuhan, 3).verdict === '成功',     '警戒されると3枚一致でも成功どまり');
+  ok(run(at, yuhan, 2).verdict === '失敗',     '警戒されると2枚一致は失敗に落ちる');
+  ok(run(at, yuhan, 1).verdict === '失敗',     '警戒されても失敗より下（決裂）には落ちない');
+  ok(run(at, yuhan, 0).verdict === '決裂',     '0枚一致は警戒の有無にかかわらず決裂');
+}
+
+/* --- 5c. 決裂すると縁筋も閉じる ------------------------------------------- */
+head('5c. 決裂した人物の縁筋が紹介枠から外れるか');
+{
+  const hub = [...E.TIE_GRAPH].sort((a, b) => b[1].size - a[1].size)[0][0];  // 最も縁の多い人物
+  const kin = [...E.TIE_GRAPH.get(hub)];
+  const withHub    = Object.assign(E.createState(1), { contacts: kin.slice(0, 1), banned: [] });
+  const hubBanned  = Object.assign(E.createState(1), { contacts: kin.slice(0, 1), banned: [hub] });
+  const a = new Set(); const b = new Set();
+  for (let t = 1; t <= 10; t++) {
+    a.add(E.introPick(Object.assign({}, withHub,   { turn: t }), new Set()));
+    b.add(E.introPick(Object.assign({}, hubBanned, { turn: t }), new Set()));
+  }
+  const blocked = [...E.TIE_GRAPH.get(hub)];
+  ok([...b].every(id => id === null || !blocked.includes(id)),
+     `決裂した人物(${E.CHAR_BY_ID.get(hub).name})の縁者が紹介枠に出てこない`);
+  ok([...a].some(id => blocked.includes(id)), '決裂していなければ、その縁者は紹介枠に出る');
+}
 
 /* --- 6. エンディング分岐 ------------------------------------------------- */
 head('6. エンディング分岐');
@@ -175,6 +224,9 @@ ok(mk([0,18,0,14,0]).t === '明治維新（史実改）', '開国18+雄藩14 →
 ok(mk([0,16,0,0,16]).t === '武装共和国', '開国16+抗戦16 → 武装共和国');
 ok(mk([16,0,0,0,15]).t === '野合の衆', '公武16+抗戦15 → 野合の衆');
 ok(mk([9,8,5,4,3]).t === '歴史の藻屑', '合計は多いが上位2つが30未満 → 歴史の藻屑');
+ok(mk([20,0,10,0,0]).t === '立憲君主幕府', '20+10 → 二番目が下限ちょうどで複合革命が成立');
+ok(mk([25,0,5,0,0]).t === '歴史の藻屑', '25+5 → 合計30でも二番目が薄いので複合革命にならない');
+ok(mk([29,1,0,0,0]).t === '歴史の藻屑', '29+1 → 連立の実体がなく歴史の藻屑');
 ok(mk([31,0,32,0,0]).t === '徳川の再臨', '複数が30超 → 最大値の単独覇権が優先');
 
 /* --- 7. データ整合性 ----------------------------------------------------- */
@@ -224,7 +276,7 @@ head('7b. 151名がどれだけ盤面に出てくるか（1000局）');
 }
 
 /* --- 8. 熟練プレイでの到達可能性 ------------------------------------------ */
-head('8. 全エンディングに到達できるか（正解を引き当て続ける熟練プレイ）');
+head('8. 全エンディングに到達できるか（正解を引き当て、警戒を避ける熟練プレイ）');
 /* 目標勢力へ寄せ続ける戦略。相手が既に目標勢力なら支持、違えば転向させる。 */
 function strategist(seed, targets) {
   let st = E.createState(seed), t = 0;
@@ -233,7 +285,9 @@ function strategist(seed, targets) {
     const slots = m.intro ? [...m.normal, m.intro] : m.normal;
     const target = targets[t++ % targets.length];
     /* 目標勢力の人物がいればその人を優先（支持のほうが相手を削らない） */
-    let charId = slots.find(id => E.CHAR_BY_ID.get(id).factions.includes(target)) ?? slots[0];
+    const unwary = slots.filter(id => E.waryOf(st.currents, id) < 0);
+    const pool = unwary.length ? unwary : slots;
+    let charId = pool.find(id => E.CHAR_BY_ID.get(id).factions.includes(target)) ?? pool[0];
     const c = E.CHAR_BY_ID.get(charId);
     const isTarget = c.factions.includes(target);
     const ownF = isTarget ? target : c.factions[0];
@@ -243,7 +297,7 @@ function strategist(seed, targets) {
   return st;
 }
 const reached = new Map();
-for (let seed = 1; seed <= 40; seed++) {
+for (let seed = 1; seed <= 80; seed++) {
   for (const targets of [[0],[1],[2],[3],[4],[0,2],[1,3],[1,4],[0,4],[2,3],[0,1,2,3,4]]) {
     const e = E.evaluateEnding(strategist(seed, targets));
     if (!reached.has(e.t)) reached.set(e.t, `seed ${seed} / 目標 ${targets.map(f => E.FACTIONS[f].name).join('+')}`);

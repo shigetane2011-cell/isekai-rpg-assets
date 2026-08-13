@@ -113,6 +113,19 @@ const FACTIONS = [
   { key:'yuhan',   name:'雄藩', full:'雄藩連合', cls:'f-yuhan' },
   { key:'kosen',   name:'抗戦', full:'尊皇攘夷', cls:'f-kosen' },
 ];
+/* 対立軸。史実で真っ向からぶつかった組み合わせを敵対関係として持つ。
+   自分の盤面で相手の対立勢力が WARY_LINE 以上まで育っていると、
+   その人物は端から警戒し、交渉の判定が一段下がる。
+   「寄せすぎると誰も話を聞いてくれなくなる」という圧力を作るための規則。 */
+const OPPOSED = [
+  [4, 1, 3], // 公武 ↔ 抗戦（融和と過激攘夷）/ 開国（攘夷志向の朝廷）/ 雄藩（倒幕へ傾く大藩）
+  [4, 0],    // 開国 ↔ 抗戦（開国か攘夷か）/ 公武
+  [3, 4],    // 佐幕 ↔ 雄藩（幕府か倒幕か）/ 抗戦（新選組と志士）
+  [2, 0],    // 雄藩 ↔ 佐幕 / 公武
+  [2, 1, 0], // 抗戦 ↔ 佐幕 / 開国 / 公武
+];
+const WARY_LINE = 12;
+
 const ERAS  = ['初級期','中級期','上級期','伝説期'];
 const RANKS = ['初級','中級','上級','伝説'];
 const MAX_ID_BY_ERA = [30, 90, 135, 151];
@@ -490,7 +503,7 @@ const ENDINGS = {
 };
 
 /* --- 状態 ---------------------------------------------------------------- */
-const MAX_TURN = 10, GOAL = 30, CAP = 40;
+const MAX_TURN = 10, GOAL = 30, CAP = 40, COMBO_MIN = 10;
 
 function createState(seed){
   return { seed: seed >>> 0, turn: 1, currents:[0,0,0,0,0],
@@ -534,6 +547,8 @@ function meetingList(st){
 function introPick(st, exclude){
   if (!st.contacts.length) return null;
   const excl = new Set([...st.contacts, ...st.banned, ...(exclude || [])]);
+  /* 決裂した人物の縁筋も閉じる。激怒した相手の周辺は、こちらに会おうとしない。 */
+  for (const b of st.banned) for (const t of (TIE_GRAPH.get(b) || [])) excl.add(t);
   const tied = new Set();
   for (const c of st.contacts) for (const t of (TIE_GRAPH.get(c) || [])) if (!excl.has(t)) tied.add(t);
   let cands = [...tied].sort((a, b) => a - b);        // ②史実の結びつきを優先
@@ -568,6 +583,15 @@ function composeArgument(argueF, cards){
   return [0,1,2].map(i => CARDS[argueF][i][cards[i]]).join('。') + '。';
 }
 
+/* その人物が、こちらの旗色を見て警戒しているか */
+function waryOf(currents, charId){
+  const ch = CHAR_BY_ID.get(charId);
+  for (const f of ch.factions)
+    for (const o of OPPOSED[f])
+      if (currents[o] >= WARY_LINE) return o;
+  return -1;
+}
+
 /* --- 交渉の解決 ---------------------------------------------------------- */
 /* action = { charId, stance:'support'|'convert', ownF, argueF, cards:[m0,m1,m2] } */
 function resolve(st, action){
@@ -577,25 +601,32 @@ function resolve(st, action){
   const effRank = premature ? 0 : rank;               // 時期尚早ならボーナス無効（初級相当）
 
   const hits = [0,1,2].map(i => action.cards[i] === ch.correct[i]);
-  const score = hits.filter(Boolean).length;
+  const rawScore = hits.filter(Boolean).length;
   const text  = composeArgument(action.argueF, action.cards);
   const len   = chars(text);
 
-  let gain = score === 3 ? 4 : score === 2 ? 2 : 0;
+  /* 警戒: こちらの旗色が鮮明すぎると、判定が一段下がる（決裂までは落とさない） */
+  const waryBy = waryOf(st.currents, action.charId);
+  const score  = (waryBy >= 0 && rawScore >= 2) ? rawScore - 1 : rawScore;
+
+  /* 転向は「攻撃」。3枚すべて刺さらなければ通らない、全か無かの賭け。 */
+  const allOrNothing = action.stance === 'convert';
+  let gain = score === 3 ? 4 : (score === 2 && !allOrNothing) ? 2 : 0;
   if (gain > 0){
     if (effRank === 1) gain += 1;
     else if (effRank === 2) gain += 2;
     else if (effRank === 3) gain *= 2;
   }
+  const succeeded = gain > 0;
   let penalty = 0;
-  if (score <= 1 && !premature){
+  if (!succeeded && !premature){
     if (effRank === 2) penalty = 1;
     else if (effRank === 3) penalty = 3;
   }
 
   const cur = st.currents.slice();
   const before = cur.slice();
-  if (gain > 0){
+  if (succeeded){
     cur[action.argueF] += gain;
     if (action.stance === 'convert') cur[action.ownF] -= (score === 3 ? 2 : 1);
   }
@@ -603,7 +634,7 @@ function resolve(st, action){
   for (let i = 0; i < 5; i++) cur[i] = clamp(cur[i], 0, CAP);
 
   const contacts = st.contacts.slice(), banned = st.banned.slice();
-  if (score >= 2 && !contacts.includes(action.charId)) contacts.push(action.charId);
+  if (succeeded && !contacts.includes(action.charId)) contacts.push(action.charId);
   if (score === 0 && !banned.includes(action.charId)) banned.push(action.charId);
 
   const next = {
@@ -613,11 +644,12 @@ function resolve(st, action){
   next.finished = next.turn > MAX_TURN || cur.some(v => v >= CAP);
 
   return { next, report: {
-    charId: action.charId, name: ch.name, score, hits, premature, rank, effRank,
+    charId: action.charId, name: ch.name, score, rawScore, hits, premature, rank, effRank,
     gain, penalty, text, len, stance: action.stance, ownF: action.ownF, argueF: action.argueF,
+    waryBy, allOrNothing,
     delta: cur.map((v, i) => v - before[i]),
-    verdict: ['決裂','失敗','成功','大成功'][score],
-    contactAdded: score >= 2, bannedNow: score === 0,
+    verdict: succeeded ? (score === 3 ? '大成功' : '成功') : ['決裂','失敗','失敗','失敗'][score],
+    contactAdded: succeeded, bannedNow: score === 0,
   }};
 }
 
@@ -630,7 +662,9 @@ function evaluateEnding(st){
   }
   const order = [0,1,2,3,4].sort((a,b) => cur[b] - cur[a] || a - b);
   const [a, b] = order;
-  if (cur[a] + cur[b] >= GOAL){
+  /* 「複合革命」を名乗るには、二番目の勢力も実体を伴っている必要がある。
+     29+1 のような偏った内訳は連立ではなく、単に一勢力が届かなかっただけとみなす。 */
+  if (cur[a] + cur[b] >= GOAL && cur[b] >= COMBO_MIN){
     const key = [a,b].sort((x,y) => x - y).join('+');
     return Object.assign({ kind:'combo', pair:[a,b] }, ENDINGS.combo[key] || ENDINGS.combo['etc']);
   }
@@ -674,7 +708,7 @@ function hashState(st){
 }
 
 const ENGINE = { mulberry32, streamOf, FACTIONS, ERAS, RANKS, CHARACTERS, CHAR_BY_ID, CARDS, CATS,
-  TIES, TIE_GRAPH, ENDINGS, MAX_TURN, GOAL, CAP, ROSTER, createState, totalOf, eraOf, eraOfTotal, rankOfId, baseId,
+  TIES, TIE_GRAPH, ENDINGS, MAX_TURN, GOAL, CAP, COMBO_MIN, ROSTER, OPPOSED, WARY_LINE, waryOf, createState, totalOf, eraOf, eraOfTotal, rankOfId, baseId,
   meetingList, introPick, cardOptions, composeArgument, resolve, evaluateEnding, replay,
   encodeSave, decodeSave, hashState };
 if (typeof globalThis !== 'undefined') globalThis.ENGINE = ENGINE;
@@ -701,10 +735,14 @@ function chartHTML(){
     s += `<span class="${f.cls}">[${f.name}] ${pad(st.currents[i])}: ${bar(st.currents[i])}</span>`
        + (i===0 ? '  (目標30 / 上限40)' : '') + '\n';
   });
+  const foes = E.FACTIONS.map((f, i) => st.currents[i] >= E.WARY_LINE
+    ? `<span class="${f.cls}">${f.name}</span>を掲げるため <span class="warn" style="display:inline">${
+        E.OPPOSED[i].map(o => E.FACTIONS[o].name).join('・')}</span> の人物が警戒中` : null).filter(Boolean);
   const list = st.contacts.length
     ? st.contacts.map(id => `<span class="pill">${esc(E.CHAR_BY_ID.get(id).name)}</span>`).join('')
     : '<span class="small">なし</span>';
   return `<div class="panel"><h2>時勢チャート</h2><pre class="chart">${s.trimEnd()}</pre>
+    ${foes.length ? `<div class="small" style="margin-top:8px;color:var(--shu)">${foes.join('<br>')}</div>` : ''}
     <div style="margin-top:10px"><span class="small">【獲得した人脈】</span><br>${list}</div>
     ${st.banned.length ? `<div style="margin-top:6px"><span class="small">【決裂・出現停止】</span> ${
       st.banned.map(id=>`<span class="pill">${esc(E.CHAR_BY_ID.get(id).name)}</span>`).join('')}</div>` : ''}
@@ -732,7 +770,9 @@ function viewTitle(){
       <li><b>対話と転向</b>：相手を支持するか、論破して『転向』させるか。言葉で歴史を設計してください。</li>
     </ol>
     <hr>
-    <p class="small">説得は<b>論証カード</b>で行います。「利益提示・文脈理解・論理整合」の3枚を選び、その人物に本当に刺さる組み合わせを当ててください。一致数がそのまま 決裂／失敗／成功／大成功 になります。手がかりは各人物の【情勢】描写です。</p>
+    <p class="small">説得は<b>論証カード</b>で行います。「利益提示・文脈理解・論理整合」の3枚を選び、その人物に本当に刺さる組み合わせを当ててください。手がかりは各人物の【情勢】描写です。</p>
+    <p class="small"><b>支持</b>は2枚一致でも通ります。<b>転向</b>は攻撃なので3枚すべて刺さらねば通りません。<br>
+    そして<b>旗色を鮮明にするほど、敵対する勢力の人物は耳を貸さなくなります</b>（いずれかの時勢が12以上で、対立勢力の人物は判定が一段下がる）。寄せ切るか、抑えて回るかが最大の判断です。</p>
     <p class="small">同じ seed と同じ選択なら、盤面は必ず同じになります（完全リプレイ可能）。</p>
     <div class="row" style="align-items:center">
       <label class="small">seed <input id="seed" type="number" value="1868" style="width:9em;font-family:monospace;padding:5px;border:1px solid var(--line)"></label>
@@ -767,11 +807,14 @@ function viewMeeting(){
     const fl = c.factions.map(f => `<span class="tag ${fac(f).cls}">${fac(f).name}</span>`).join('');
     const pre = rk > era
       ? `<div class="warn">※ 時期尚早：世論が熟しておらず、動かしても影響は限定的です（初級相当に制限）</div>` : '';
+    const wb = E.waryOf(st.currents, id);
+    const wary = wb >= 0
+      ? `<div class="warn">※ あなたが掲げる〔${fac(wb).name}〕を警戒している。判定が一段下がります</div>` : '';
     return `<div class="person ${isIntro?'intro':''}" data-id="${id}">
       <div><span class="nm">${esc(c.name)}</span><span class="tag">${E.RANKS[rk]}</span>${fl}</div>
       <div class="nick">— ${esc(c.nick)} —</div>
       <div class="desc">${isIntro ? '[人脈] ご紹介にあずかりました。<br>' : '[情勢] '}${esc(c.desc)}</div>
-      ${pre}</div>`;
+      ${pre}${wary}</div>`;
   };
   app.innerHTML = headerHTML() + chartHTML() +
     `<div class="panel"><h2>面会可能な人物</h2>
@@ -798,10 +841,16 @@ function viewStance(){
   } else {
     if (ui.ownF === null) ui.ownF = c.factions[0];
     if (ui.stance === null){
+      const wb2 = E.waryOf(st.currents, ui.charId);
       body = `<p>${esc(c.name)}〔${fac(ui.ownF).name}〕にどう臨みますか？</p>
+        ${wb2 >= 0 ? `<div class="warn">この人物は、あなたが掲げる〔${fac(wb2).name}〕を警戒している。判定が一段下がる。</div>` : ''}
         <div class="row">
           <button class="primary" data-stance="support">支持する<span class="small">（${fac(ui.ownF).name}を伸ばす）</span></button>
           <button data-stance="convert">論破して転向させる<span class="small">（別の思想に引き込む）</span></button>
+        </div>
+        <div class="small" style="margin-top:10px">
+          <b>支持</b>は2枚一致でも通る。だが伸びるのは相手の勢力〔${fac(ui.ownF).name}〕。<br>
+          <b>転向</b>は攻撃。<b>3枚すべて刺さらねば通らない</b>全か無かの賭けだが、通れば自分の掲げる勢力が伸び、相手の勢力を削れる。
         </div>`;
     } else {
       body = `<p><b>転向</b>を狙います。どの思想に引き込みますか？</p>
@@ -836,6 +885,8 @@ function viewCards(){
     `<div class="panel"><h2>${esc(c.name)}を${ui.stance === 'support' ? '支持する' : `${fac(ui.argueF).name}へ転向させる`}</h2>
       <div class="quote">${esc(c.desc)}</div>
       <div class="small">語る言葉は〔${fac(ui.argueF).name}〕の思想のもの。だが<b>刺さるかどうかは相手の型</b>で決まります。</div>
+      ${ui.stance === 'convert' ? '<div class="warn">転向は3枚すべて刺さらねば通りません。</div>' : ''}
+      ${E.waryOf(st.currents, ui.charId) >= 0 ? '<div class="warn">警戒されているため、判定は一段下がります。</div>' : ''}
       ${E.CATS.map((cat, i) => `
         <div class="slot-h">${i+1}. ${cat.name} <span style="opacity:.7">— ${cat.hint}</span></div>
         ${ui.opts[i].map(o => `<div class="card ${ui.picks[i]===o.motive?'sel':''}" data-cat="${i}" data-m="${o.motive}">${esc(o.text)}</div>`).join('')}
@@ -872,11 +923,15 @@ function viewResult(){
         r.stance==='support'?'賛意を示した':`${fac(r.argueF).name}への転向を迫った`}</div>
       <div class="quote">「${esc(r.text)}」</div>
       ${marks}
+      ${r.waryBy >= 0 ? `<div class="warn">※ あなたの掲げる〔${fac(r.waryBy).name}〕への警戒により、${r.rawScore}枚一致が一段下げられました</div>` : ''}
+      ${r.allOrNothing && r.score === 2 ? `<div class="warn">※ 転向は3枚すべて刺さらねば通りません。2枚では相手は動きませんでした</div>` : ''}
       ${r.premature ? `<div class="warn">※ 時期尚早のため、${E.RANKS[r.rank]}級ですが影響力は限定的です（ランク補正を無効化）</div>` : ''}
-      ${r.penalty ? `<div class="warn">※ ${E.RANKS[r.rank]}級との決裂により時勢 -${r.penalty}</div>` : ''}
+      ${r.penalty ? `<div class="warn">※ ${E.RANKS[r.rank]}級との交渉に失敗し時勢 -${r.penalty}</div>` : ''}
       <div class="delta">${d}</div>
       ${r.contactAdded ? `<div class="small">→ ${esc(c.name)}が【人脈】に加わった。</div>` : ''}
-      ${r.bannedNow ? `<div class="small">→ ${esc(c.name)}は激怒し、二度と現れない。</div>` : ''}
+      ${r.bannedNow ? `<div class="small">→ ${esc(c.name)}は激怒し、二度と現れない。<b>その縁筋も閉じた</b>（${
+        [...(E.TIE_GRAPH.get(r.charId) || [])].slice(0, 4).map(i => esc(E.CHAR_BY_ID.get(i).name)).join('・') || '縁者なし'
+      }${(E.TIE_GRAPH.get(r.charId)?.size || 0) > 4 ? ' ほか' : ''} からの紹介が絶えた）</div>` : ''}
       <div class="small" style="margin-top:8px;opacity:.7">この論証は ${r.len} 字。次の面会者はこの数から導かれます。</div>
     </div>` + chartHTML() +
     `<div class="row"><button class="primary" id="next">${st.finished?'結末を見る':'次のターンへ'}</button></div>`
