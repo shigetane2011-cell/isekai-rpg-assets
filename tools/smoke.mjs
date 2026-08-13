@@ -32,6 +32,12 @@ for (let i=0;i<12;i++){
   const next = await p.$('#next'); if (!next) break;
   await next.click();
   if (await p.$('.ending')) break;
+  // 第8ターンの幕間を消化する
+  if (await p.$('.interlude')) {
+    console.log('幕間:', await p.$eval('.interlude .title', e=>e.textContent));
+    await p.click('[data-pick="0"]');
+    await p.click('#ilnext');
+  }
   await p.waitForSelector('.person');
   await p.click('.person');
   if (await p.$('[data-own]')) await p.click('[data-own]');
@@ -43,6 +49,7 @@ for (let i=0;i<12;i++){
 }
 await p.waitForSelector('.ending');
 console.log('エンディング:', await p.$eval('.ending .title', e=>e.textContent));
+console.log('見出し:', await p.$$eval('.ending h3', e=>e.map(x=>x.textContent).join(' / ')));
 const code = await p.$eval('textarea', e=>e.value);
 console.log('保存コード:', code.slice(0,70)+'…');
 await p.screenshot({ path: sp + '/05-ending.png', fullPage:true });
