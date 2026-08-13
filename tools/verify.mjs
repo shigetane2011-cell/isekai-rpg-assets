@@ -268,6 +268,19 @@ ok(E.CHARACTERS.every(c => c.correct.every((m, k) => typeof E.REPLIES[k][m] === 
   ok(E.REPLIES[2][c.correct[2]].includes('名分'), '近藤勇に筋を問えば名分論を語る');
 }
 
+/* --- 5f. 余話（史実の短評と関連作品） ------------------------------------- */
+head('5f. 余話のデータ整合性');
+ok([...E.NOTES.keys()].every(id => E.CHAR_BY_ID.has(id)), '余話が実在する人物IDだけを指している');
+ok([...E.NOTES.values()].every(v => typeof v.note === 'string' && v.note.length > 20),
+   'すべての余話に実体のある本文がある');
+ok([...E.NOTES.keys()].filter(id => E.rankOfId(id) === 3).length === 16,
+   '伝説級16名は全員に余話がある');
+{
+  const n = [...E.NOTES.keys()].length, w = [...E.NOTES.values()].filter(v => v.works).length;
+  console.log(`  余話 ${n}/151名（初級3 中級29 上級21 伝説16）／ 関連作品つき ${w}名`);
+  ok(n >= 60, `主要人物に余話が行き渡っている（${n}名）`);
+}
+
 /* --- 6. エンディング分岐 ------------------------------------------------- */
 head('6. エンディング分岐');
 const mk = cur => E.evaluateEnding({ currents: cur });
@@ -279,7 +292,14 @@ ok(mk([0,0,0,0,30]).t === '修羅の国', '抗戦30 → 修羅の国');
 ok(mk([20,0,15,0,0]).t === '立憲君主幕府', '公武20+佐幕15 → 立憲君主幕府');
 ok(mk([0,18,0,14,0]).t === '明治維新（史実改）', '開国18+雄藩14 → 明治維新（史実改）');
 ok(mk([0,16,0,0,16]).t === '武装共和国', '開国16+抗戦16 → 武装共和国');
-ok(mk([16,0,0,0,15]).t === '野合の衆', '公武16+抗戦15 → 野合の衆');
+ok(mk([16,0,0,0,15]).t === '攘夷の詔', '公武16+抗戦15 → 攘夷の詔（対立軸の複合にも固有エンドがある）');
+{
+  const pairs = [];
+  for (let a = 0; a < 5; a++) for (let b = a + 1; b < 5; b++) pairs.push([a, b]);
+  const got = pairs.map(([a, b]) => { const cur = [0,0,0,0,0]; cur[a] = 20; cur[b] = 10; return mk(cur).t; });
+  ok(got.length === 10 && new Set(got).size === 10, '2勢力の組合せ10通りが、それぞれ別のエンディングになる');
+  ok(!got.includes('野合の衆'), '『野合の衆』に落ちる組合せが残っていない（保険としてコードには残す）');
+}
 ok(mk([9,8,5,4,3]).t === '歴史の藻屑', '合計は多いが上位2つが30未満 → 歴史の藻屑');
 ok(mk([20,0,10,0,0]).t === '立憲君主幕府', '20+10 → 二番目が下限ちょうどで複合革命が成立');
 ok(mk([25,0,5,0,0]).t === '歴史の藻屑', '25+5 → 合計30でも二番目が薄いので複合革命にならない');
@@ -355,12 +375,18 @@ function strategist(seed, targets) {
 }
 const reached = new Map();
 for (let seed = 1; seed <= 80; seed++) {
-  for (const targets of [[0],[1],[2],[3],[4],[0,2],[1,3],[1,4],[0,4],[2,3],[0,1,2,3,4]]) {
+  const allPairs = [];
+  for (let a = 0; a < 5; a++) for (let b = a + 1; b < 5; b++) allPairs.push([a, b]);
+  for (const targets of [[0],[1],[2],[3],[4], ...allPairs, [0,1,2,3,4]]) {
     const e = E.evaluateEnding(strategist(seed, targets));
     if (!reached.has(e.t)) reached.set(e.t, `seed ${seed} / 目標 ${targets.map(f => E.FACTIONS[f].name).join('+')}`);
   }
 }
-const allEndings = [...Object.values(E.ENDINGS.solo), ...Object.values(E.ENDINGS.combo), E.ENDINGS.chaos];
+/* 『野合の衆』は10通りすべてに固有エンドを与えた結果、到達不能になった。
+   将来勢力を増やしたときの保険としてコードには残してあるので、到達性の対象からは外す。 */
+const allEndings = [...Object.values(E.ENDINGS.solo),
+                    ...Object.entries(E.ENDINGS.combo).filter(([k]) => k !== 'etc').map(([, v]) => v),
+                    E.ENDINGS.chaos];
 for (const e of allEndings) ok(reached.has(e.t), `『${e.t}』に到達できる${reached.has(e.t) ? `（${reached.get(e.t)}）` : ''}`);
 
 head('9. 無作為プレイ300局の到達分布（下手に打つと何も成せないことの確認）');

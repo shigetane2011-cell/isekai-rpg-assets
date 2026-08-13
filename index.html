@@ -1,6 +1,16 @@
+<!doctype html>
+<html lang="ja">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>維新の乱流</title>
+<title>維新の乱流 ― 幕末、日本の夜明けを設計せよ ―</title>
+<meta name="description" content="幕末を舞台にした歴史設計シミュレーション。151名の人物と対話し、言葉で5つの時勢を動かして日本の未来を決める。LLMを使わない完全決定論エンジン、単一HTML、通信なし。">
+<meta name="author" content="原案: ミッキーベルグ">
+<meta name="color-scheme" content="light">
+<meta property="og:type" content="website">
+<meta property="og:title" content="維新の乱流 ― 幕末、日本の夜明けを設計せよ ―">
+<meta property="og:description" content="人物の欲望・立場・論理を読み、言葉で歴史を動かす幕末シミュレーション。同じseedと同じ選択なら盤面は必ず同じになる完全決定論エンジン。">
+<meta name="twitter:card" content="summary_large_image">
 <style>
 :root{
   --washi:#ece2cf; --washi2:#f6f0e1; --sumi:#1b1815; --sumi2:#3b342c;
@@ -35,6 +45,13 @@ pre.chart .u{color:var(--shu);font-weight:700}
 .person{border:1px solid var(--line);background:var(--washi2);padding:12px 14px;margin:10px 0;border-radius:2px;
   cursor:pointer;transition:.12s;position:relative}
 .person:hover{border-color:var(--sumi);transform:translateX(2px)}
+.person:focus-visible,.card:focus-visible{outline:3px solid var(--ai);outline-offset:2px}
+.detail{margin-top:10px;font-size:.8rem;color:var(--sumi2)}
+.detail summary{cursor:pointer;letter-spacing:.08em;opacity:.7}
+.detail summary:hover{opacity:1}
+.yowa summary{color:var(--kin);opacity:.85}
+.tut{border:1px dashed var(--ai);background:#fbfaf5;padding:12px 14px;margin:10px 0;font-size:.86rem}
+.tut b{color:var(--ai)}
 .person .nm{font-size:1.05rem;font-weight:600;letter-spacing:.06em}
 .person .tag{font-size:.72rem;border:1px solid currentColor;padding:1px 6px;margin-left:8px;vertical-align:2px;border-radius:2px}
 .person .nick{font-size:.82rem;color:var(--sumi2);margin-top:2px}
@@ -80,6 +97,8 @@ textarea{width:100%;font-family:monospace;font-size:.72rem;height:70px;border:1p
 .pill{display:inline-block;font-size:.74rem;border:1px solid var(--line);background:#fff;padding:1px 8px;margin:2px 4px 2px 0;border-radius:10px}
 hr{border:0;border-top:1px solid var(--line);margin:18px 0}
 </style>
+</head>
+<body>
 <div class="wrap" id="app"></div>
 <script type="module">
 /* ==ENGINE START== */
@@ -504,6 +523,34 @@ const ENDINGS = {
       '攘夷の激情と開国の実利が、奇妙な形で握手した。「異国に勝つために異国の技術を全て奪う」――この一点で結ばれた軍人と商人が、天皇も将軍も戴かぬ共和政府を樹立した。',
       '徴兵制は史実より十年早く敷かれ、国家予算の四割が軍に流れた。列強は当初これを嘲笑し、やがて警戒し、最後には東アジアの均衡が根本から書き換わったことを認めた。',
       'あなたは軍務省の高官となった。あなたが動かした歴史は、あなた自身が想像していたよりも、はるかに速く走り出している。止め方は、誰も知らない。'],},
+    '0+1':{t:'勅許開国',s:'朝幕協調の通商国家',p:[
+      '朝廷が自ら開国の勅許を下した。攘夷の詔は撤回され、条約は「勅許を得た正統な取り決め」として国内に受け入れられる。幕府は朝命の執行機関として存続し、開港場の差配は朝廷の任じた奉行が握った。',
+      '列強はこの転換に戸惑い、そして歓迎した。交渉相手が「勅許」という一枚の紙で国内をまとめられる以上、条約の履行は速い。日本は極東で最も交渉しやすい国と呼ばれ、その評判が関税自主権の回復交渉をわずかに早めた。',
+      'あなたは開港場の差配に加わった。京の公卿と横浜の商人という、二十年前なら一生交わらなかった二種類の人間の間に立って、通訳のような仕事を生涯続けることになる。'],},
+    '0+3':{t:'公議政体',s:'諸侯合議の立憲君主制',p:[
+      '朝廷を戴き、雄藩の当主が合議する体制が生まれた。史実では数か月で瓦解した参預会議が、ここでは制度として根を張った。将軍職は廃されたが徳川家は一大名として議席を得ており、討たれてはいない。',
+      '合議制は決断が遅い。列強との交渉はことごとく先送りされ、不平等条約はそのまま残った。だが誰も単独では戦争を決められないという一点が、この国を三十年のあいだ戦争から遠ざけることになる。',
+      'あなたは合議の場に連なった。決まらないことに苛立つ夜もあるが、決めた誰かが暴走する国よりはましだと、年を取るにつれて思うようになった。'],},
+    '0+4':{t:'攘夷の詔',s:'神権鎖国国家',p:[
+      '帝の攘夷の意志が、そのまま国是となった。幕府は攘夷を実行できぬ罪で権を失い、朝廷が直に政を執る。開港場は閉ざされ、異人は追われ、暦も度量衡も古の制に戻された。',
+      '列強は当然、艦隊を送った。下関と鹿児島は焼かれ、賠償金は国庫を空にした。それでも港は開かれなかった。この国は世界地図の上で、意図的に空白であり続けることを選んだのである。',
+      'あなたは詔を奉じた側にいた。焼ける港を遠くに見ながら、これが自分の望んだ夜明けだったのかを、生涯かけて考え続けることになる。'],},
+    '1+2':{t:'横須賀の帝国',s:'幕府主導の殖産興業',p:[
+      '幕府は倒れず、開明派が実権を握った。小栗上野介の構想どおり横須賀に製鉄所と造船所が建ち、幕府直営の工廠が全国に広がる。大名家は次々と株主に変わり、藩は会社になった。',
+      '仏国との提携が深まり、技術と資本が流れ込んだ。英国はこれを警戒したが、幕府は英仏を competing させることで双方から譲歩を引き出した。日本は東アジアで最初の工業国となる。',
+      'あなたは工廠の一つを任された。武士の身分はとうに意味を失い、あなたを測るのは帳簿と納期だけになった。悪くない、と思っている。'],},
+    '2+3':{t:'列藩同盟',s:'徳川を含む連邦',p:[
+      '幕府と雄藩が刃を交える前に折り合った。将軍は諸侯の一人に格下げされ、しかし最大の一人として議長席に座る。徳川三百年の蓄積と薩長の兵力が同じ卓に着いた、奇妙に安定した連邦が生まれた。',
+      '内乱がなかったぶん、国力の損耗もなかった。列強はこの国を「潰し損ねた」と本国に報告している。戊辰の戦火を知らない世代が、そのまま産業を興す側に回った。',
+      'あなたは仲介役として名を残した。敵味方の双方から「あの男は結局どちらだったのか」と言われ続けたが、どちらでもなかったからこそまとめられたのだと、あなただけは知っている。'],},
+    '2+4':{t:'攘夷幕府',s:'鎖国回帰の軍事政権',p:[
+      '幕府が攘夷を引き受けた。条約は破棄され、開港場は接収され、幕府陸軍が異人居留地を包囲する。志士たちは討幕の理由を失い、そのまま幕府の兵となった。攘夷という一点で、最も遠かった二つが握手したのである。',
+      '当然、戦争になった。四国艦隊が江戸湾に現れ、砲撃は三日続いた。幕府は屈しなかった。屈しない代わりに、この国は以後半世紀にわたって列強から「交渉不能の国」として扱われることになる。',
+      'あなたは軍務の職に就いた。焼けた江戸を再建する仕事に生涯を費やし、あの三日間について語ることは一度もなかった。'],},
+    '3+4':{t:'討幕の嵐',s:'革命政権',p:[
+      '雄藩の兵力と志士の刃が結び、幕府は一年ももたずに倒れた。史実の維新より速く、そして血なまぐさい。旧幕臣は職を追われ、佐幕の大名家は取り潰され、数万の武士が路頭に迷った。',
+      '新政府は強力で、そして荒い。列強との交渉に妥協という語彙を持たず、何度も戦争の一歩手前まで行った。それでも押し切れたのは、この政権が国内に一切の対抗勢力を残さなかったからである。',
+      'あなたは革命の功臣となった。だが功臣は、次の粛清の候補でもある。あなたが押し出した嵐は、まだ止まっていない。'],},
     'etc':{t:'野合の衆',s:'不安定な連立政権',p:[
       '相容れぬ思想が、勝利の分配のためだけに手を結んだ。新政府は成立した初日から分裂を抱え、閣議は罵声で終わり、詔勅は三日ごとに撤回された。',
       '列強はこの政府を「三年もつまい」と本国に報告した。実際には七年もったが、その七年の間に結ばれた条約はいずれも不利で、後の世代がその後始末に半世紀を費やすことになる。',
@@ -559,6 +606,85 @@ const SMALLTALK = [
     '一藩では何もできぬ。だが藩が連なれば、幕府とて動かせる。',
     '斬るべき時に斬らねば、斬られるのはこちらだ。議論の時はもう過ぎた。'] },
 ];
+
+
+/* --- 余話（史実の短評と、関連作品） --------------------------------------
+   ゲームの「刺さる型」はあくまでゲーム上の解釈。ここは史実側の短い注記で、
+   遊んだあとに実際の人物を知るための入口として置いてある。
+   関連作品は、その人物を主要人物として扱う代表作に限って挙げた。
+   ------------------------------------------------------------------------ */
+const N = (id, note, works) => [id, { note, works: works || '' }];
+const NOTES = new Map([
+N(7,'土佐の漁師の子。遭難して米国船に救われ、そのまま渡米して航海術を学んだ。帰国後、幕府に召し出されて通訳と教育にあたる。','井伏鱒二『ジョン万次郎漂流記』'),
+N(19,'寺田屋に潜んでいた龍馬を、風呂から裸で駆け上がって危機を知らせたとされる。後に龍馬の妻となり、日本初の新婚旅行と呼ばれる薩摩湯治に同行した。','司馬遼太郎『竜馬がゆく』'),
+N(25,'庄内の郷士の子。将軍警護の名目で浪士組を組織して上洛させながら、京で一転して尊皇攘夷を掲げた。この分裂から新選組が生まれる。',''),
+N(31,'会津藩主。京都守護職を引き受け、孝明天皇の厚い信任を得た。その信任ゆえに戊辰では朝敵とされ、会津は焦土となる。','大河ドラマ『八重の桜』'),
+N(32,'新選組総長。北辰一刀流の遣い手で隊内の良識派とされたが、隊を脱走して切腹した。','司馬遼太郎『新選組血風録』'),
+N(33,'下級公家から出て、岩倉村での蟄居中も策謀を続けた。王政復古の政変を仕掛け、維新後は使節団を率いて欧米を回る。',''),
+N(39,'長州五傑の一人として英国へ密航。帰国後は攘夷の不可能を説き、維新後は外務・財務の中枢を歩んだ。',''),
+N(40,'薩摩の商人官僚。大阪経済の礎を築き、「東の渋沢、西の五代」と並び称される。','朝ドラ『あさが来た』'),
+N(41,'中津藩の下級武士の家に生まれ、緒方洪庵の適塾で学ぶ。三度の渡航で見た西洋を『西洋事情』『学問のすゝめ』として世に問うた。','福沢諭吉『福翁自伝』'),
+N(44,'武蔵の豪農の子。尊皇攘夷の志士から一橋家の家臣、幕臣、そして明治の実業家へと立場を変え続け、五百余の会社設立に関わった。','渋沢栄一『論語と算盤』／大河ドラマ『青天を衝け』'),
+N(45,'長州の村医から兵学者へ。上野戦争を半日で決着させた作戦家で、日本陸軍の実質的な創設者とされる。','司馬遼太郎『花神』'),
+N(47,'多摩の農家の出。天然理心流の道場を継ぎ、浪士組から新選組局長へ。武士の身分を得ることへの渇望が、その生涯を貫いている。','司馬遼太郎『燃えよ剣』／大河ドラマ『新選組!』'),
+N(48,'新選組副長。「鬼の副長」と呼ばれ、隊の規律を苛烈に保った。箱館まで戦い抜いて戦死する。','司馬遼太郎『燃えよ剣』'),
+N(49,'二番隊組長。剣の腕は隊随一とされ、新選組で最後まで生き延びた一人。晩年に回顧録を残した。','永倉新八『新撰組顛末記』'),
+N(50,'北辰一刀流の道場主から新選組参謀へ。思想は勤皇で、隊を割って御陵衛士を結成し、暗殺された。',''),
+N(51,'三番隊組長。会津まで従い、維新後は警察官として西南戦争を戦った。生涯を通じて多くを語らなかった。','浅田次郎『壬生義士伝』'),
+N(53,'幕府勘定奉行。横須賀製鉄所を建設し、フランス資本の導入を進めた。「幕府が滅んでも製鉄所は残る」と言ったとされる。',''),
+N(55,'長州藩の中枢。剣も政略も一流ながら、無謀な決起を戒め続けて生き延びた。後に木戸孝允と改名する。','司馬遼太郎『世に棲む日日』'),
+N(56,'土佐の庄屋の子。薩長を結ぶために奔走し、陸援隊を率いた。龍馬とともに近江屋で斬られる。','司馬遼太郎『竜馬がゆく』'),
+N(57,'土佐藩参政。龍馬の船中八策を容堂に取り次ぎ、大政奉還の建白へつなげた。',''),
+N(58,'紀州の生まれ。海援隊に加わり、維新後は外務大臣として不平等条約の改正を成し遂げた。「カミソリ大臣」と呼ばれる。','陸奥宗光『蹇蹇録』'),
+N(59,'土佐藩主。「鯨海酔侯」と自称した酒豪で、徳川への恩義と時勢の間で揺れ続けた。',''),
+N(60,'肥前の出。演説と交渉で明治政界を渡り、早稲田大学を創設した。',''),
+N(61,'土佐の上士。武力討幕を主張し、維新後は自由民権運動を率いる。',''),
+N(63,'土佐の郷士の子。武市半平太に見出され、京で数々の暗殺を実行した。捕縛後の自白が土佐勤王党の壊滅を招く。','司馬遼太郎『人斬り以蔵』'),
+N(64,'土佐勤王党の盟主。郷士の身で藩論を動かしたが、容堂の弾圧で投獄され切腹した。','司馬遼太郎『竜馬がゆく』'),
+N(65,'水戸の出。浪士組から新選組初代局長の一人となるが、その乱行を理由に近藤・土方らに暗殺された。',''),
+N(68,'肥後の志士。佐久間象山を斬ったとされる。維新後も攘夷を捨てず、明治政府に処刑された。','漫画『るろうに剣心』の緋村剣心の着想元とされる'),
+N(79,'新選組一番隊組長。天然理心流の若き天才と伝わるが、労咳に倒れ、鳥羽伏見の戦いを見ることなく病死した。','司馬遼太郎『燃えよ剣』'),
+N(80,'新選組十番隊組長。槍の名手で、腹の切腹傷を仲間に見せる癖があったという。',''),
+N(82,'会津藩士で見廻組を率いた。坂本龍馬暗殺の実行者とする説が有力視されている。',''),
+N(86,'越前藩士。藩札による財政再建で名を上げ、五箇条の御誓文の原案を起草した。',''),
+N(91,'島津斉彬の異母弟の子で、藩主の父として実権を握った。生麦事件と薩英戦争は彼の行列から始まっている。',''),
+N(92,'尊攘派公卿の中心。八月十八日の政変で京を追われ、長州へ落ちた（七卿落ち）。維新後は太政大臣。',''),
+N(93,'十四代将軍。十三歳で将軍職に就き、和宮を正室に迎えて公武合体の象徴となった。二十歳で大坂城に没する。',''),
+N(94,'幕臣。剣・禅・書の達人で、江戸無血開城の交渉のため単身で西郷の陣を訪ねた。','山岡鉄舟『武士道』'),
+N(95,'幕臣でありながら幕府の終わりを見通し、神戸海軍操練所を開いて龍馬らを育てた。西郷と会談して江戸を戦火から救う。','子母澤寛『勝海舟』／勝海舟『氷川清話』'),
+N(96,'長崎のスコットランド商人。薩摩・長州に武器を売り、五代や伊藤の密航を助けた。旧邸は長崎の観光名所として残る。',''),
+N(99,'幕府海軍副総裁。オランダ留学で国際法を学び、旧幕臣を率いて箱館で蝦夷共和国を称した。降伏後に赦され、明治政府の大臣を歴任する。',''),
+N(100,'長岡藩家老。武装中立を掲げて薩長と幕府の間に立とうとしたが拒まれ、北越戦争で戦って傷つき没した。','司馬遼太郎『峠』'),
+N(103,'薩摩の下級武士。二度の島流しを経て討幕の中心となり、江戸無血開城を成した。維新後は西南戦争で新政府と戦い自刃する。','司馬遼太郎『翔ぶが如く』／大河ドラマ『西郷どん』'),
+N(104,'西郷の幼馴染。感情を排した実務で明治国家を設計し、内務卿として近代化を推し進めた。紀尾井坂で暗殺される。','司馬遼太郎『翔ぶが如く』'),
+N(105,'薩摩藩家老。若くして藩政を握り、薩長同盟の場を提供した。維新を見届ける前に三十六歳で病没する。',''),
+N(106,'肥前の出。司法卿として近代法制を整えたが、征韓論に敗れて下野し、佐賀の乱で処刑された。','司馬遼太郎『歳月』'),
+N(107,'長州の上士の子。松下村塾に学び、身分を問わない奇兵隊を創設した。功山寺の挙兵で藩論を覆し、二十七歳で病没する。','司馬遼太郎『世に棲む日日』'),
+N(108,'松陰の高弟にして妹婿。長州尊攘派の中心となり、禁門の変で自刃した。','司馬遼太郎『世に棲む日日』'),
+N(116,'松代藩士。西洋砲術と朱子学を併せ持ち、勝海舟・吉田松陰・坂本龍馬らに影響を与えた。開国論を唱えて暗殺される。',''),
+N(123,'幕府目付。蛮社の獄で蘭学者を弾圧し、「妖怪」と渾名された。後に自らも失脚し長く幽閉された。',''),
+N(126,'宇和島藩主。四賢侯の一人で、村田蔵六（大村益次郎）を招いて軍艦を建造させた。',''),
+N(127,'奇兵隊の軍監から明治の元老へ。徴兵制を敷き、日本陸軍の骨格を作った。',''),
+N(128,'長州の足軽の家に生まれ、英国へ密航。初代内閣総理大臣となり、大日本帝国憲法を起草した。',''),
+N(130,'西郷・大久保の従弟。薩英戦争で砲火を浴びて西洋兵学に転じ、日露戦争では満州軍総司令官を務めた。',''),
+N(131,'薩摩の下級武士。人斬り半次郎と恐れられ、維新後は桐野利秋と改名。西南戦争で西郷とともに死んだ。',''),
+N(136,'幕末の天皇。生涯を通じて開国を嫌い、しかし倒幕には与せず幕府との協調を望んだ。若くして急逝する。',''),
+N(137,'孝明天皇の妹。有栖川宮との婚約を解かれ、公武合体のため十四代将軍家茂に降嫁した。','大河ドラマ『篤姫』'),
+N(138,'米国東インド艦隊司令長官。四隻の艦隊で浦賀に来航し、翌年の日米和親条約で二百年の鎖国を終わらせた。',''),
+N(139,'初代駐日米国総領事。下田の玉泉寺に住み、粘り強い交渉の末に日米修好通商条約を結ばせた。',''),
+N(140,'水戸斉昭の子で一橋家を継ぎ、十五代将軍となった。大政奉還で自ら幕府を畳み、その後六十年を静かに生きた。','司馬遼太郎『最後の将軍』'),
+N(141,'薩摩から島津本家の養女を経て十三代将軍家定に嫁いだ。大奥の主として、戊辰の際に徳川家の存続を嘆願した。','宮尾登美子『天璋院篤姫』／大河ドラマ『篤姫』'),
+N(142,'桂小五郎が改名した名。維新三傑の一人として版籍奉還・廃藩置県を進めたが、心労を重ねて早世した。',''),
+N(143,'薩摩藩主。集成館事業で反射炉・造船・紡績を興し、西郷や大久保を見出した。志半ばで急死する。',''),
+N(144,'萩の松下村塾で高杉・久坂・伊藤らを育てた。密航を企てて投獄され、安政の大獄で処刑された。享年二十九。','司馬遼太郎『世に棲む日日』／吉田松陰『留魂録』'),
+N(145,'土佐の郷士の子。脱藩して海援隊を組織し、薩長同盟を仲介、大政奉還を建白した。近江屋で暗殺される。','司馬遼太郎『竜馬がゆく』'),
+N(146,'越前藩主。四賢侯の一人で政事総裁職を務め、横井小楠を招いて藩政を改革した。',''),
+N(147,'熊本の思想家。越前藩の顧問として国是を説き、勝海舟に「天下で恐ろしいものを二人見た。横井小楠と西郷南洲だ」と言わしめた。',''),
+N(148,'彦根藩主で大老。勅許を待たず日米修好通商条約に調印し、安政の大獄で反対派を弾圧。桜田門外で暗殺された。','舟橋聖一『花の生涯』'),
+N(149,'長州藩主。家臣の建議に「そうせい」と応じ続けたことから「そうせい侯」と呼ばれた。その放任が長州の人材を育てたとも評される。',''),
+N(150,'水戸藩主。「烈公」と呼ばれた強硬な攘夷論者で、慶喜の実父。藩内抗争と天狗党の乱の淵源となった。',''),
+N(151,'孝明天皇の子。父の急逝により十四歳で践祚し、王政復古から明治の全時代を生きた。','大河ドラマなどで幕末期の少年帝として描かれる'),
+]);
 
 /* --- 状態 ---------------------------------------------------------------- */
 const MAX_TURN = 10, GOAL = 30, CAP = 40, COMBO_MIN = 10;
@@ -657,9 +783,8 @@ function waryOf(currents, charId){
 /* --- 交渉の解決 ---------------------------------------------------------- */
 /* action = { charId, stance, ownF, argueF, cards:[m0,m1,m2], probed:bool }
    probed は交渉前に相手を「探った」かどうか。探れば3つの正解すべてが分かるが、
-   手の内を明かして探りを入れた相手は心酔しない ―― その交渉は
-   **どれだけ刺さっても「成功」止まり**になり、大成功の値は取れない。
-   代わりに、転向も成功の値で通るようになる（全か無かの賭けから外れる）。 */
+   手の内を明かした分だけ影響力が落ち、その交渉の獲得が1下がる（最低1）。
+   判定そのもの（大成功／成功／失敗／決裂）は変わらない。 */
 function resolve(st, action){
   const ch = CHAR_BY_ID.get(action.charId);
   const era = eraOf(st), rank = rankOfId(action.charId);
@@ -787,7 +912,7 @@ function hashState(st){
 }
 
 const ENGINE = { mulberry32, streamOf, FACTIONS, ERAS, RANKS, CHARACTERS, CHAR_BY_ID, CARDS, CATS,
-  TIES, TIE_GRAPH, QUESTIONS, REPLIES, SMALLTALK, ENDINGS, MAX_TURN, GOAL, CAP, COMBO_MIN, PROBE_LIMIT, ROSTER, OPPOSED, WARY_LINE, waryOf, createState, totalOf, eraOf, eraOfTotal, rankOfId, baseId,
+  TIES, TIE_GRAPH, QUESTIONS, REPLIES, SMALLTALK, NOTES, ENDINGS, MAX_TURN, GOAL, CAP, COMBO_MIN, PROBE_LIMIT, ROSTER, OPPOSED, WARY_LINE, waryOf, createState, totalOf, eraOf, eraOfTotal, rankOfId, baseId,
   meetingList, introPick, cardOptions, composeArgument, resolve, evaluateEnding, replay,
   encodeSave, decodeSave, hashState };
 if (typeof globalThis !== 'undefined') globalThis.ENGINE = ENGINE;
@@ -801,7 +926,7 @@ const E = ENGINE;
 let st = null;
 let ui = { screen:'title', charId:null, stance:null, ownF:null, argueF:null,
            picks:[null,null,null], probed:false, asked:null, chatted:[],
-           opts:null, report:null, intro:false };
+           tutorialDone:false, opts:null, report:null, intro:false };
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fac = i => E.FACTIONS[i];
@@ -833,7 +958,9 @@ function headerHTML(){
   return `<header>
     <h1>維新の乱流<span class="sub">幕末、日本の夜明けを設計せよ</span></h1>
     <div class="meta">
-      <span>第 <b>${st.turn}</b> ターン / 残り <b>${Math.max(0, E.MAX_TURN - st.turn + 1)}</b></span>
+      <span>${st.finished
+        ? `全 <b>${E.MAX_TURN}</b> ターン 終了`
+        : `第 <b>${st.turn}</b> ターン / 残り <b>${E.MAX_TURN - st.turn + 1}</b>`}</span>
       <span>seed <code class="seed">${st.seed}</code></span>
       <span>時代ランク <b>${E.ERAS[E.eraOf(st)]}</b></span>
       <span>探り 残り <b>${E.PROBE_LIMIT - st.probesUsed}</b> / ${E.PROBE_LIMIT}</span>
@@ -844,7 +971,12 @@ function headerHTML(){
 function viewTitle(){
   app.innerHTML = `<header><h1>維新の乱流<span class="sub">幕末、日本の夜明けを設計せよ</span></h1></header>
   <div class="panel">
-    <p>本作は、<b>10ターン以内に理想の日本（いずれかの時勢30Pt以上）を創り上げる</b>シミュレーションです。</p>
+    <p>本作は、<b>10ターン以内に理想の日本を創り上げる</b>シミュレーションです。到達できる未来は次の3系統・全16通り。</p>
+    <ul style="padding-left:1.2em;margin:8px 0">
+      <li><b>単独覇権</b>：いずれか1つの時勢が<b>30以上</b> — 5通り</li>
+      <li><b>複合革命</b>：上位2つの時勢の<b>合計が30以上、かつ2番目が10以上</b> — 10通り（組み合わせごとに別の未来）</li>
+      <li><b>混沌</b>：いずれも満たさなければ『歴史の藻屑』</li>
+    </ul>
     <ol style="padding-left:1.2em">
       <li><b>時代のうねり</b>：どの勢力を伸ばしても『時代の熱量（合計値）』は高まり、より高位の人物が登場します。</li>
       <li><b>人脈と時期尚早</b>：『人脈』を使えばまだ時代に出てこない大物を呼べますが、時代が追いついていない場合、説得の効果は制限されます。</li>
@@ -867,11 +999,13 @@ function viewTitle(){
     <textarea id="code" placeholder="IR3:1868:47,0,2,2,053,0;..."></textarea>
     <div class="row"><button id="load">再開する</button></div>
     <div id="err" class="warn"></div>
+    <hr>
+    <p class="small" style="opacity:.85">※ 本作は史実を題材にした<b>フィクション</b>です。人物の勢力分類・性格づけ・台詞・「刺さる動機」は、すべてゲーム上の解釈であり、史実の評価ではありません。実在の人物・団体への評価を意図するものではありません。</p>
   </div>`;
   document.getElementById('start').onclick = () => {
     const v = parseInt(document.getElementById('seed').value, 10);
     st = E.createState(Number.isFinite(v) ? v : 1868);
-    ui.screen = 'meeting'; render();
+    ui.tutorialDone = false; ui.screen = 'meeting'; render();
   };
   document.getElementById('load').onclick = () => {
     try {
@@ -894,7 +1028,7 @@ function viewMeeting(){
     const wb = E.waryOf(st.currents, id);
     const wary = wb >= 0
       ? `<div class="warn">※ あなたが掲げる〔${fac(wb).name}〕を警戒している。判定が一段下がります</div>` : '';
-    return `<div class="person ${isIntro?'intro':''}" data-id="${id}">
+    return `<div class="person ${isIntro?'intro':''}" data-id="${id}" role="button" tabindex="0">
       <div><span class="nm">${esc(c.name)}</span><span class="tag">${E.RANKS[rk]}</span>${fl}</div>
       <div class="nick">— ${esc(c.nick)} —</div>
       <div class="desc">${isIntro ? '[人脈] ご紹介にあずかりました。<br>' : '[情勢] '}${esc(c.desc)}</div>
@@ -905,7 +1039,10 @@ function viewMeeting(){
       ${m.normal.map(id => card(id, false)).join('')}
       ${m.intro ? card(m.intro, true) : ''}
       <div class="small" style="margin-top:10px">誰と会いますか？（人脈を駆使し、維新のパズルを完成させてください）</div>
-      <div class="small" style="margin-top:6px;opacity:.65">基点ID ${m.base}（前ターンの論証文 ${st.lastLen} 字 × ${st.turn}ターン）</div>
+      <details class="detail"><summary>この顔ぶれが選ばれた理由</summary>
+        <div class="small">前ターンに組み上げた論証文の<b>${st.lastLen}字</b>×<b>${st.turn}</b>ターン、その剰余から基点ID <b>${m.base}</b> が決まり、
+        そこから3名が選ばれています。時代が進むまでは高位の人物が初級へ丸められます。あなたが選んだ言葉が、次に会う人を変えています。</div>
+      </details>
     </div>` + saveBoxHTML();
   app.querySelectorAll('.person').forEach(el => el.onclick = () => {
     ui.charId = +el.dataset.id; ui.intro = el.classList.contains('intro');
@@ -970,7 +1107,16 @@ function viewStance(){
       ${ui.chatted.includes('era') ? '' : `<button class="chip talk" data-chat="era">${esc(E.SMALLTALK[0].chip)}</button>`}
       ${ui.chatted.includes('impression') ? '' : '<button class="chip talk" data-chat="impression">拙者をどう見ておられる</button>'}
     </div>
-    ${said.join('')}`;
+    ${said.join('')}
+    ${(() => {
+      const n = E.NOTES.get(ui.charId);
+      if (!n) return '';
+      return `<details class="detail yowa"><summary>余話 ― 史実のこの人物</summary>
+        <div class="small" style="margin-top:6px">${esc(n.note)}</div>
+        ${n.works ? `<div class="small" style="margin-top:6px;color:var(--kin)">関連作品：${esc(n.works)}</div>` : ''}
+        <div class="small" style="margin-top:6px;opacity:.6">※ 史実の記述です。ゲーム上の「刺さる型」とは別ですが、読み解きの助けにはなります。</div>
+      </details>`;
+    })()}`;
 
   app.innerHTML = headerHTML() +
     `<div class="panel"><h2>${esc(c.name)} — ${esc(c.nick)}</h2>
@@ -1002,6 +1148,16 @@ function viewCards(){
     `<div class="panel"><h2>${esc(c.name)}を${ui.stance === 'support' ? '支持する' : `${fac(ui.argueF).name}へ転向させる`}</h2>
       <div class="quote">${esc(c.desc)}</div>
       <div class="small">語る言葉は〔${fac(ui.argueF).name}〕の思想のもの。だが<b>刺さるかどうかは相手の型</b>で決まります。</div>
+      ${st.turn === 1 && !ui.tutorialDone ? `<div class="tut">
+        <b>はじめに ― 三枚の読み方</b><br>
+        各人物の【情勢】描写には、<b>「何を欲しているか」の手がかりが必ず入っています</b>。
+        たとえば「武士の身分への渇望が滲む」とあれば、利益提示は〈名誉・武名〉。
+        「今日の実入りが明日の命になる」とあれば〈金銭・利権〉です。<br>
+        残る<b>文脈理解</b>と<b>論理整合</b>は描写だけでは足りません。そこで
+        <b>対話で一つ訊く</b>か、<b>探る</b>（獲得−1）か、<b>賭ける</b>かを選びます。
+        3枚そろえば大成功、2枚なら成功、1枚は失敗、0枚は決裂です。
+        <div class="row"><button id="tutok">わかった</button></div>
+      </div>` : ''}
       ${ui.asked !== null ? `<div class="say"><span class="q">「${esc(E.QUESTIONS[ui.asked].chip)}か」</span><br>${
         esc(E.REPLIES[ui.asked][c.correct[ui.asked]])}</div>` : ''}
       ${ui.stance === 'convert' ? '<div class="warn">転向は3枚すべて刺さらねば通りません。</div>' : ''}
@@ -1017,7 +1173,7 @@ function viewCards(){
         <div class="slot-h">${i+1}. ${cat.name} <span style="opacity:.7">— ${cat.hint}</span></div>
         ${ui.opts[i].map(o => {
           const isAns = ui.probed && o.motive === c.correct[i];
-          return `<div class="card ${ui.picks[i]===o.motive?'sel':''} ${isAns?'ans':''}" data-cat="${i}" data-m="${o.motive}">${
+          return `<div class="card ${ui.picks[i]===o.motive?'sel':''} ${isAns?'ans':''}" data-cat="${i}" data-m="${o.motive}" role="button" tabindex="0" aria-pressed="${ui.picks[i]===o.motive}">${
             isAns ? '<span class="mark">◎ これが刺さる</span> ' : ''}${esc(o.text)}</div>`;
         }).join('')}
       `).join('')}
@@ -1034,6 +1190,8 @@ function viewCards(){
   });
   const pb = document.getElementById('probe');
   if (pb) pb.onclick = () => { ui.probed = true; render(); };
+  const tb = document.getElementById('tutok');
+  if (tb) tb.onclick = () => { ui.tutorialDone = true; render(); };
   document.getElementById('back').onclick = () => { ui.stance = null; ui.argueF = null; ui.screen = 'stance'; render(); };
   document.getElementById('go').onclick = () => {
     const r = E.resolve(st, { charId: ui.charId, stance: ui.stance, ownF: ui.ownF,
@@ -1091,22 +1249,42 @@ function viewEnding(){
 
 const CREDIT = `<hr><div class="small" style="text-align:center;opacity:.7;padding-bottom:20px">
   原案『維新の乱流 ― 幕末、日本の夜明けを設計せよ ―』ミッキーベルグ<br>
-  本実装は原案のルールを、LLMを使わない決定論的プログラムとして再構成したものです。
+  本実装は原案のルールを、LLMを使わない決定論的プログラムとして再構成したものです。<br>
+  史実を題材としたフィクションであり、人物像・勢力分類はゲーム上の解釈です。
 </div>`;
 
 function saveBoxHTML(){
   return `<div class="panel"><h2>保存 / 共有</h2>
     <div class="small">このコードを控えれば、同じ盤面をいつでも再現できます。</div>
-    <textarea readonly>${esc(E.encodeSave(st))}</textarea>
+    <textarea readonly id="savebox">${esc(E.encodeSave(st))}</textarea>
+    <div class="row"><button id="copy">コードをコピー</button><span id="copied" class="small"></span></div>
     <div class="small" style="opacity:.7">state hash: <code class="seed">${E.hashState(st)}</code></div>
   </div>`;
+}
+
+function wireSaveBox(){
+  const b = document.getElementById('copy'), box = document.getElementById('savebox');
+  if (!b || !box) return;
+  b.onclick = async () => {
+    box.select();
+    try { await navigator.clipboard.writeText(box.value); }
+    catch { document.execCommand('copy'); }
+    document.getElementById('copied').textContent = 'コピーしました';
+  };
 }
 
 function render(){
   ({ title:viewTitle, meeting:viewMeeting, stance:viewStance,
      cards:viewCards, result:viewResult, ending:viewEnding })[ui.screen]();
+  wireSaveBox();
+  /* Enter / Space でも押せるようにする（role="button" を付けた要素すべて） */
+  app.querySelectorAll('[role="button"]').forEach(el => el.onkeydown = e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); }
+  });
   app.insertAdjacentHTML('beforeend', CREDIT);
   window.scrollTo(0,0);
 }
 render();
 </script>
+</body>
+</html>
