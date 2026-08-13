@@ -52,6 +52,11 @@ button.primary:hover:not(:disabled){background:#8e1f24}
   font-size:.88rem;border-radius:2px;transition:.1s}
 .card:hover{border-color:var(--sumi2)}
 .card.sel{border-color:var(--shu);border-left:5px solid var(--shu);background:#fff}
+.probe{font-size:.72rem;padding:2px 10px;margin-left:8px;vertical-align:1px;border-color:var(--kin);color:var(--kin)}
+.probe:hover{background:var(--kin);color:#fff}
+.probed{font-size:.72rem;margin-left:8px;color:var(--kin);letter-spacing:.1em}
+.card.ans{border-color:var(--kin);background:#fffdf5}
+.card .mark{color:var(--kin);font-weight:600;font-size:.8rem}
 .slot-h{font-size:.8rem;letter-spacing:.16em;color:var(--sumi2);margin-top:16px;border-bottom:1px solid var(--line);padding-bottom:3px}
 .result{border:2px solid var(--sumi);padding:14px 16px;margin:14px 0;background:var(--washi2)}
 .result .verdict{font-size:1.2rem;letter-spacing:.2em;font-weight:600}
@@ -504,10 +509,14 @@ const ENDINGS = {
 
 /* --- 状態 ---------------------------------------------------------------- */
 const MAX_TURN = 10, GOAL = 30, CAP = 40, COMBO_MIN = 10;
+/* 相手を「探る」と3つの正解がすべて分かるが、手の内を明かした分だけ影響力が落ち、
+   その交渉の獲得が1下がる。使えるのは1局に PROBE_LIMIT 回まで。
+   回数を切らないと、探り続けるだけで勝ててしまい賭けが消える。 */
+const PROBE_LIMIT = 4;
 
 function createState(seed){
   return { seed: seed >>> 0, turn: 1, currents:[0,0,0,0,0],
-           contacts:[], banned:[], lastLen:0, actions:[], finished:false };
+           contacts:[], banned:[], lastLen:0, probesUsed:0, actions:[], finished:false };
 }
 const totalOf = st => st.currents.reduce((a,b)=>a+b,0);
 const eraOf   = st => eraOfTotal(totalOf(st));
@@ -564,14 +573,14 @@ function introPick(st, exclude){
   return cands[cands.length - 1];
 }
 
-/* 論証カードの提示（各カテゴリ4枚。正解1＋ダミー3、並びも決定論的） */
+/* 論証カードの提示（各カテゴリ3枚。正解1＋ダミー2、並びも決定論的） */
 function cardOptions(st, charId, faction){
   const ch = CHAR_BY_ID.get(charId), out = [];
   for (let cat = 0; cat < 3; cat++){
     const correct = ch.correct[cat];
     const rnd = streamOf(st.seed, st.turn, charId * 13 + faction * 7 + cat);
-    const decoys = pickDistinct(rnd, [0,1,2,3,4,5].filter(m => m !== correct), 3);
-    out.push(pickDistinct(rnd, [correct, ...decoys], 4)
+    const decoys = pickDistinct(rnd, [0,1,2,3,4,5].filter(m => m !== correct), 2);
+    out.push(pickDistinct(rnd, [correct, ...decoys], 3)
       .map(m => ({ motive:m, text: CARDS[faction][cat][m] })));
   }
   return out;
@@ -593,7 +602,11 @@ function waryOf(currents, charId){
 }
 
 /* --- 交渉の解決 ---------------------------------------------------------- */
-/* action = { charId, stance:'support'|'convert', ownF, argueF, cards:[m0,m1,m2] } */
+/* action = { charId, stance, ownF, argueF, cards:[m0,m1,m2], probed:bool }
+   probed は交渉前に相手を「探った」かどうか。探れば3つの正解すべてが分かるが、
+   手の内を明かして探りを入れた相手は心酔しない ―― その交渉は
+   **どれだけ刺さっても「成功」止まり**になり、大成功の値は取れない。
+   代わりに、転向も成功の値で通るようになる（全か無かの賭けから外れる）。 */
 function resolve(st, action){
   const ch = CHAR_BY_ID.get(action.charId);
   const era = eraOf(st), rank = rankOfId(action.charId);
@@ -609,7 +622,10 @@ function resolve(st, action){
   const waryBy = waryOf(st.currents, action.charId);
   const score  = (waryBy >= 0 && rawScore >= 2) ? rawScore - 1 : rawScore;
 
-  /* 転向は「攻撃」。3枚すべて刺さらなければ通らない、全か無かの賭け。 */
+  /* 探れるのは残り回数がある場合のみ。リプレイでも同じ判定になるよう状態から決める。 */
+  const probed = !!action.probed && st.probesUsed < PROBE_LIMIT;
+
+  /* 転向は「攻撃」。3枚すべて刺さらねば通らない全か無かの賭け。 */
   const allOrNothing = action.stance === 'convert';
   let gain = score === 3 ? 4 : (score === 2 && !allOrNothing) ? 2 : 0;
   if (gain > 0){
@@ -617,6 +633,10 @@ function resolve(st, action){
     else if (effRank === 2) gain += 2;
     else if (effRank === 3) gain *= 2;
   }
+  /* 探った代償: その交渉で得られる時勢が1下がる（最低1）。
+     元の獲得が大きい大物ほど、相対的な代償は軽く済む。 */
+  const gainBeforeProbe = gain;
+  if (gain > 0 && probed) gain = Math.max(1, gain - 1);
   const succeeded = gain > 0;
   let penalty = 0;
   if (!succeeded && !premature){
@@ -639,14 +659,16 @@ function resolve(st, action){
 
   const next = {
     seed: st.seed, turn: st.turn + 1, currents: cur, contacts, banned,
-    lastLen: len, actions: st.actions.concat([action]), finished: false,
+    lastLen: len, probesUsed: st.probesUsed + (probed ? 1 : 0),
+    actions: st.actions.concat([action]), finished: false,
   };
   next.finished = next.turn > MAX_TURN || cur.some(v => v >= CAP);
 
   return { next, report: {
     charId: action.charId, name: ch.name, score, rawScore, hits, premature, rank, effRank,
-    gain, penalty, text, len, stance: action.stance, ownF: action.ownF, argueF: action.argueF,
-    waryBy, allOrNothing,
+    gain, gainBeforeProbe, penalty, text, len, probed,
+    probesLeft: PROBE_LIMIT - (st.probesUsed + (probed ? 1 : 0)),
+    stance: action.stance, ownF: action.ownF, argueF: action.argueF, waryBy, allOrNothing,
     delta: cur.map((v, i) => v - before[i]),
     verdict: succeeded ? (score === 3 ? '大成功' : '成功') : ['決裂','失敗','失敗','失敗'][score],
     contactAdded: succeeded, bannedNow: score === 0,
@@ -683,32 +705,36 @@ function replay(seed, actions){
   return { state: st, reports };
 }
 function encodeSave(st){
-  return 'IR2:' + st.seed + ':' + st.actions
-    .map(a => [a.charId, a.stance === 'support' ? 0 : 1, a.ownF, a.argueF, a.cards.join('')].join(','))
+  return 'IR3:' + st.seed + ':' + st.actions
+    .map(a => [a.charId, a.stance === 'support' ? 0 : 1, a.ownF, a.argueF, a.cards.join(''),
+               a.probed ? 1 : 0].join(','))
     .join(';');
 }
 function decodeSave(code){
   const s = String(code).trim();
-  if (!s.startsWith('IR2:')) throw new Error(s.startsWith('IR1:') ? '旧版(IR1)の保存コードです。人物名簿の再編により再現できません' : 'コードの形式が違います');
+  if (!s.startsWith('IR3:')) throw new Error(/^IR[12]:/.test(s)
+    ? '旧版の保存コードです。名簿と判定ルールが変わったため再現できません'
+    : 'コードの形式が違います');
   const parts = s.slice(4).split(':');
   const seed = parseInt(parts[0], 10) >>> 0;
   const body = parts.slice(1).join(':');
   const actions = !body ? [] : body.split(';').filter(Boolean).map(chunk => {
-    const [c, s2, o, f, k] = chunk.split(',');
+    const [c, s2, o, f, k, h] = chunk.split(',');
     return { charId:+c, stance: +s2 === 0 ? 'support' : 'convert',
-             ownF:+o, argueF:+f, cards: Array.from(k).map(Number) };
+             ownF:+o, argueF:+f, cards: Array.from(k).map(Number), probed: +(h || 0) === 1 };
   });
   return { seed, actions };
 }
 function hashState(st){
-  const s = JSON.stringify([st.seed, st.turn, st.currents, st.contacts, st.banned, st.lastLen, st.finished]);
+  const s = JSON.stringify([st.seed, st.turn, st.currents, st.contacts, st.banned,
+                            st.lastLen, st.probesUsed, st.finished]);
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
   return h.toString(16).padStart(8, '0');
 }
 
 const ENGINE = { mulberry32, streamOf, FACTIONS, ERAS, RANKS, CHARACTERS, CHAR_BY_ID, CARDS, CATS,
-  TIES, TIE_GRAPH, ENDINGS, MAX_TURN, GOAL, CAP, COMBO_MIN, ROSTER, OPPOSED, WARY_LINE, waryOf, createState, totalOf, eraOf, eraOfTotal, rankOfId, baseId,
+  TIES, TIE_GRAPH, ENDINGS, MAX_TURN, GOAL, CAP, COMBO_MIN, PROBE_LIMIT, ROSTER, OPPOSED, WARY_LINE, waryOf, createState, totalOf, eraOf, eraOfTotal, rankOfId, baseId,
   meetingList, introPick, cardOptions, composeArgument, resolve, evaluateEnding, replay,
   encodeSave, decodeSave, hashState };
 if (typeof globalThis !== 'undefined') globalThis.ENGINE = ENGINE;
@@ -721,7 +747,7 @@ const app = document.getElementById('app');
 const E = ENGINE;
 let st = null;
 let ui = { screen:'title', charId:null, stance:null, ownF:null, argueF:null,
-           picks:[null,null,null], opts:null, report:null, intro:false };
+           picks:[null,null,null], probed:false, opts:null, report:null, intro:false };
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fac = i => E.FACTIONS[i];
@@ -756,6 +782,7 @@ function headerHTML(){
       <span>第 <b>${st.turn}</b> ターン / 残り <b>${Math.max(0, E.MAX_TURN - st.turn + 1)}</b></span>
       <span>seed <code class="seed">${st.seed}</code></span>
       <span>時代ランク <b>${E.ERAS[E.eraOf(st)]}</b></span>
+      <span>探り 残り <b>${E.PROBE_LIMIT - st.probesUsed}</b> / ${E.PROBE_LIMIT}</span>
     </div></header>`;
 }
 
@@ -773,6 +800,8 @@ function viewTitle(){
     <p class="small">説得は<b>論証カード</b>で行います。「利益提示・文脈理解・論理整合」の3枚を選び、その人物に本当に刺さる組み合わせを当ててください。手がかりは各人物の【情勢】描写です。</p>
     <p class="small"><b>支持</b>は2枚一致でも通ります。<b>転向</b>は攻撃なので3枚すべて刺さらねば通りません。<br>
     そして<b>旗色を鮮明にするほど、敵対する勢力の人物は耳を貸さなくなります</b>（いずれかの時勢が12以上で、対立勢力の人物は判定が一段下がる）。寄せ切るか、抑えて回るかが最大の判断です。</p>
+    <p class="small">読み切れないときは<b>「探る」</b>で3つの正解をすべて開けられます。ただし手の内を明かした分だけ影響力が落ち、<b>その交渉の獲得が1下がります</b>。使えるのは<b>1局に4回まで</b>。<br>
+    元の獲得が大きい大物ほど代償は相対的に軽いので、<b>探りは大物と、失敗できない転向に取っておくのが得</b>です。</p>
     <p class="small">同じ seed と同じ選択なら、盤面は必ず同じになります（完全リプレイ可能）。</p>
     <div class="row" style="align-items:center">
       <label class="small">seed <input id="seed" type="number" value="1868" style="width:9em;font-family:monospace;padding:5px;border:1px solid var(--line)"></label>
@@ -780,7 +809,7 @@ function viewTitle(){
     </div>
     <hr>
     <div class="small">保存コードから再開：</div>
-    <textarea id="code" placeholder="IR2:1868:47,0,2,2,053;..."></textarea>
+    <textarea id="code" placeholder="IR3:1868:47,0,2,2,053,0;..."></textarea>
     <div class="row"><button id="load">再開する</button></div>
     <div id="err" class="warn"></div>
   </div>`;
@@ -825,7 +854,8 @@ function viewMeeting(){
     </div>` + saveBoxHTML();
   app.querySelectorAll('.person').forEach(el => el.onclick = () => {
     ui.charId = +el.dataset.id; ui.intro = el.classList.contains('intro');
-    ui.stance = null; ui.ownF = null; ui.argueF = null; ui.picks = [null,null,null];
+    ui.stance = null; ui.ownF = null; ui.argueF = null;
+    ui.picks = [null,null,null]; ui.probed = false;
     ui.screen = 'stance'; render();
   });
 }
@@ -880,6 +910,7 @@ function viewCards(){
   const c = E.CHAR_BY_ID.get(ui.charId);
   ui.opts = E.cardOptions(st, ui.charId, ui.argueF);
   const ready = ui.picks.every(p => p !== null);
+  const left = E.PROBE_LIMIT - st.probesUsed;
   const text = ready ? E.composeArgument(ui.argueF, ui.picks) : '';
   app.innerHTML = headerHTML() +
     `<div class="panel"><h2>${esc(c.name)}を${ui.stance === 'support' ? '支持する' : `${fac(ui.argueF).name}へ転向させる`}</h2>
@@ -887,12 +918,24 @@ function viewCards(){
       <div class="small">語る言葉は〔${fac(ui.argueF).name}〕の思想のもの。だが<b>刺さるかどうかは相手の型</b>で決まります。</div>
       ${ui.stance === 'convert' ? '<div class="warn">転向は3枚すべて刺さらねば通りません。</div>' : ''}
       ${E.waryOf(st.currents, ui.charId) >= 0 ? '<div class="warn">警戒されているため、判定は一段下がります。</div>' : ''}
+      <div class="row" style="margin-top:12px">
+        ${ui.probed
+          ? '<span class="probed">◎ 探り済み — この交渉の獲得は 1 下がる</span>'
+          : left > 0
+            ? `<button class="probe" id="probe">この相手を探る（残り ${left} 回・獲得 −1）</button>`
+            : '<span class="probed" style="opacity:.6">探りは使い切った（1局 ' + E.PROBE_LIMIT + ' 回まで）</span>'}
+      </div>
       ${E.CATS.map((cat, i) => `
         <div class="slot-h">${i+1}. ${cat.name} <span style="opacity:.7">— ${cat.hint}</span></div>
-        ${ui.opts[i].map(o => `<div class="card ${ui.picks[i]===o.motive?'sel':''}" data-cat="${i}" data-m="${o.motive}">${esc(o.text)}</div>`).join('')}
+        ${ui.opts[i].map(o => {
+          const isAns = ui.probed && o.motive === c.correct[i];
+          return `<div class="card ${ui.picks[i]===o.motive?'sel':''} ${isAns?'ans':''}" data-cat="${i}" data-m="${o.motive}">${
+            isAns ? '<span class="mark">◎ これが刺さる</span> ' : ''}${esc(o.text)}</div>`;
+        }).join('')}
       `).join('')}
       ${ready ? `<div class="slot-h">組み上がった論証（${Array.from(text).length} 字）</div>
         <div class="quote">「${esc(text)}」</div>` : ''}
+
       <div class="row">
         <button class="primary" id="go" ${ready?'':'disabled'}>この論で臨む</button>
         <button id="back">戻る</button>
@@ -901,10 +944,12 @@ function viewCards(){
   app.querySelectorAll('.card').forEach(el => el.onclick = () => {
     ui.picks[+el.dataset.cat] = +el.dataset.m; render();
   });
+  const pb = document.getElementById('probe');
+  if (pb) pb.onclick = () => { ui.probed = true; render(); };
   document.getElementById('back').onclick = () => { ui.stance = null; ui.argueF = null; ui.screen = 'stance'; render(); };
   document.getElementById('go').onclick = () => {
     const r = E.resolve(st, { charId: ui.charId, stance: ui.stance, ownF: ui.ownF,
-                              argueF: ui.argueF, cards: ui.picks.slice() });
+                              argueF: ui.argueF, cards: ui.picks.slice(), probed: ui.probed });
     st = r.next; ui.report = r.report; ui.screen = 'result'; render();
   };
 }
@@ -913,7 +958,8 @@ function viewCards(){
 function viewResult(){
   const r = ui.report, c = E.CHAR_BY_ID.get(r.charId);
   const marks = r.hits.map((h,i) => `<div class="small">${h?'☑':'☐'} ${E.CATS[i].name}：${
-    h ? '刺さった' : `外れ（この人物に効くのは「${E.CATS[i].motives[c.correct[i]]}」）`}</div>`).join('');
+    h ? (r.probed ? '刺さった（探って得た）' : '刺さった')
+      : `外れ（この人物に効くのは「${E.CATS[i].motives[c.correct[i]]}」）`}</div>`).join('');
   const d = r.delta.map((v,i) => v ? `<span class="${fac(i).cls}">[${fac(i).name}] ${v>0?'+':''}${v}</span>` : null)
     .filter(Boolean).join('　') || '変動なし';
   app.innerHTML = headerHTML() +
@@ -923,6 +969,7 @@ function viewResult(){
         r.stance==='support'?'賛意を示した':`${fac(r.argueF).name}への転向を迫った`}</div>
       <div class="quote">「${esc(r.text)}」</div>
       ${marks}
+      ${r.probed && r.gain > 0 ? `<div class="warn">※ 探りを入れたため、獲得が ${r.gainBeforeProbe} から ${r.gain} に下がりました（探り残り ${r.probesLeft} 回）</div>` : ''}
       ${r.waryBy >= 0 ? `<div class="warn">※ あなたの掲げる〔${fac(r.waryBy).name}〕への警戒により、${r.rawScore}枚一致が一段下げられました</div>` : ''}
       ${r.allOrNothing && r.score === 2 ? `<div class="warn">※ 転向は3枚すべて刺さらねば通りません。2枚では相手は動きませんでした</div>` : ''}
       ${r.premature ? `<div class="warn">※ 時期尚早のため、${E.RANKS[r.rank]}級ですが影響力は限定的です（ランク補正を無効化）</div>` : ''}

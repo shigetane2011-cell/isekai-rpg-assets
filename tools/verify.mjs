@@ -44,8 +44,8 @@ function autoPlay(seed, rnd) {
     const others = [0, 1, 2, 3, 4].filter(f => f !== ownF);
     const argueF = stance === 'support' ? ownF : others[Math.floor(rnd() * others.length)];
     const opts = E.cardOptions(st, charId, argueF);
-    const cards = opts.map((o, k) => rnd() < 0.55 ? c.correct[k] : o[Math.floor(rnd() * 4)].motive);
-    const a = { charId, stance, ownF, argueF, cards };
+    const cards = opts.map((o, k) => rnd() < 0.55 ? c.correct[k] : o[Math.floor(rnd() * o.length)].motive);
+    const a = { charId, stance, ownF, argueF, cards, probed: rnd() < 0.4 };
     actions.push(a);
     st = E.resolve(st, a).next;
   }
@@ -104,9 +104,9 @@ for (let s = 1; s <= 200; s++) {
     const opts = E.cardOptions(st, charId, argueF);
     for (let k = 0; k < 3; k++) {                                    // 正解は必ず1枚だけ含まれる
       const hit = opts[k].filter(o => o.motive === c.correct[k]).length;
-      if (hit !== 1 || new Set(opts[k].map(o => o.motive)).size !== 4) inv.correct = false;
+      if (hit !== 1 || opts[k].length !== 3 || new Set(opts[k].map(o => o.motive)).size !== 3) inv.correct = false;
     }
-    const cards = opts.map(o => o[Math.floor(rnd() * 4)].motive);
+    const cards = opts.map(o => o[Math.floor(rnd() * o.length)].motive);
     const r = E.resolve(st, { charId, stance, ownF, argueF, cards });
     if (r.report.len <= 0) inv.len = false;
     st = r.next;
@@ -119,7 +119,7 @@ ok(inv.dup,     '面会リストに重複・既獲得・決裂済みが出ない
 ok(inv.rank,    '通常枠に未解禁ランクが出ない（強制変換が効いている）');
 ok(inv.intro,   '人脈が空のとき紹介枠は必ず出ない');
 ok(inv.turns,   'ゲームは必ず10ターン以内に終わる');
-ok(inv.correct, '各カテゴリの提示4枚に正解がちょうど1枚含まれる');
+ok(inv.correct, '各カテゴリの提示3枚に正解がちょうど1枚含まれる');
 ok(inv.len,     '論証文の文字数が必ず正の値になる');
 
 /* --- 5. 判定表の一致 ----------------------------------------------------- */
@@ -209,6 +209,45 @@ head('5c. 決裂した人物の縁筋が紹介枠から外れるか');
   ok([...b].every(id => id === null || !blocked.includes(id)),
      `決裂した人物(${E.CHAR_BY_ID.get(hub).name})の縁者が紹介枠に出てこない`);
   ok([...a].some(id => blocked.includes(id)), '決裂していなければ、その縁者は紹介枠に出る');
+}
+
+/* --- 5d. 探る（正解の開示と、その代償） ---------------------------------- */
+head('5d. 探ると正解は分かるが影響力が落ちるか');
+{
+  const probe = (st, id, stance = 'support') => {
+    const c = E.CHAR_BY_ID.get(id);
+    return E.resolve(st, { charId: id, stance, ownF: c.factions[0],
+                           argueF: c.factions[0], cards: c.correct.slice(), probed: true });
+  };
+  const plain = (st, id) => {
+    const c = E.CHAR_BY_ID.get(id);
+    return E.resolve(st, { charId: id, stance: 'support', ownF: c.factions[0],
+                           argueF: c.factions[0], cards: c.correct.slice(), probed: false });
+  };
+  const s0 = E.createState(1);
+  ok(plain(s0, 1).report.gain === 4 && probe(s0, 1).report.gain === 3,
+     '初級で3枚一致：探らねば+4、探れば+3');
+  ok(probe(s0, 1).report.verdict === '大成功', '探っても判定そのものは大成功のまま');
+  ok(probe(s0, 1).next.probesUsed === 1 && plain(s0, 1).next.probesUsed === 0,
+     '探った回数が状態に記録される');
+
+  /* 大物ほど代償が相対的に軽い */
+  const at = (total, id) => {
+    const st = Object.assign(E.createState(1), { currents: [total, 0, 0, 0, 0] });
+    return [plain(st, id).report.gain, probe(st, id).report.gain];
+  };
+  const [n1, p1] = at(0, 1), [n4, p4] = at(40, 136);
+  ok(p1 / n1 < p4 / n4,
+     `探る代償は大物ほど軽い（初級 ${n1}→${p1} = ${Math.round(p1/n1*100)}% / 伝説 ${n4}→${p4} = ${Math.round(p4/n4*100)}%）`);
+
+  /* 回数制限 */
+  let st = E.createState(1);
+  for (let i = 0; i < E.PROBE_LIMIT; i++) st = probe(st, 1).next;
+  ok(st.probesUsed === E.PROBE_LIMIT, `${E.PROBE_LIMIT}回まで探れる`);
+  const over = probe(st, 1).report;
+  ok(over.probed === false && over.gain === 4,
+     '上限を超えて探ろうとしても無効になり、代償も課されない');
+  ok(probe(st, 1).next.probesUsed === E.PROBE_LIMIT, '上限を超えて回数が増えない');
 }
 
 /* --- 6. エンディング分岐 ------------------------------------------------- */
