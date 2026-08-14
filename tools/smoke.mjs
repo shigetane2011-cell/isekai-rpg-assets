@@ -42,9 +42,14 @@ await p.screenshot({ path: shot('03-cards.png'), fullPage: true });
 for (const cat of [0, 1, 2]) await p.click(`.card[data-cat="${cat}"]`);
 console.log('組み上がった論証:', (await p.$$eval('.quote', els => els[els.length - 1].textContent)).slice(0, 40) + '…');
 await p.click('#go');
+if (await p.$('.duel')) {
+  console.log('立ち合い:', await p.$eval('.duel .title', e => e.textContent));
+  await p.screenshot({ path: shot('04-duel.png'), fullPage: true });
+  await p.click('[data-duel="0"]');
+}
 await p.waitForSelector('.result');
 console.log('判定:', await p.$eval('.verdict', e => e.textContent));
-await p.screenshot({ path: shot('04-result.png'), fullPage: true });
+await p.screenshot({ path: shot('04b-result.png'), fullPage: true });
 
 /* 残りのターンを機械的に消化してエンディングまで */
 for (let i = 0; i < 12; i++) {
@@ -67,6 +72,7 @@ for (let i = 0; i < 12; i++) {
   if (await p.$('#tutok')) await p.click('#tutok');
   for (const cat of [0, 1, 2]) await p.click(`.card[data-cat="${cat}"]`);
   await p.click('#go');
+  if (await p.$('.duel')) await p.click('[data-duel="0"]');
   await p.waitForSelector('.result');
 }
 await p.waitForSelector('.ending');
