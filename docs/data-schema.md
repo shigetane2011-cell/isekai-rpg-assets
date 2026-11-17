@@ -199,7 +199,10 @@
 | `sessions/{sid}/npcs/{npcId}` | NPCの現在の状態（HP、態度、位置、生死） |
 | `sessions/{sid}/log/{entryId}` | ログ1件：時刻、行動者、行動文、裁定、出目、結果、描写、公開範囲、捨てた効果 |
 | `sessions/{sid}/sealed/{round}_{uid}` | PVPの封印提出：最初はハッシュだけ、開示後に本文とsalt |
+| `data/users/{uid}/sealed/{sid}_{round}` | 開示前の行動文とsalt（本人だけが読める） |
 | `sessions/{sid}/lock` | 解決処理の手番ロック（db の `acquire` によるリース） |
-| `data/users/{uid}/characters/{cid}` | 作成中・保管中のキャラクター（本人だけが読める） |
+| `data/users/{uid}/library/characters/{cid}` | 保管中のキャラクター（本人だけが読める） |
+
+`{uid}` は `user` 機能の `id()` である。組織外の参加者は `id()` が null のことがあり、その場合キャラクターは端末内に保管する（`architecture.md` 4章）。
 
 ログは1件ずつ別の文書にする（1文書の上限は256KiB）。並べ替えは時刻順で行う。セッション文書には、シナリオを開始した時点の `scenarioVersion` と `rulesVersion` を記録する。シナリオやルールが更新されても、進行中のセッションはその版のデータで遊び続ける。
