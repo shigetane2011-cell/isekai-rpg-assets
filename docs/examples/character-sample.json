@@ -1,0 +1,49 @@
+{
+  "id": "sample_herbalist",
+  "name": "ユウト",
+  "concept": "元社畜の薬師。前世は製薬会社の研究員で、臆病だが薬草には目がない。",
+  "rulesVersion": "0.1.0",
+  "pointsTotal": 120,
+  "attributes": { "st": 9, "dx": 11, "iq": 13, "ht": 11 },
+  "derivedBought": { "hp": 0, "mp": 0, "will": 0, "per": 1 },
+  "customSkills": [
+    { "id": "pk_pharmacology", "name": "薬学（前世）", "attr": "iq", "difficulty": "hard", "default": false, "tags": ["knowledge"], "source": "past_knowledge" }
+  ],
+  "skills": {
+    "herbalism": 8,
+    "first_aid": 2,
+    "alchemy": 4,
+    "medicine": 4,
+    "observation": 4,
+    "magic_heal": 8,
+    "stealth": 4,
+    "running": 1,
+    "dagger": 4,
+    "cooking": 1,
+    "negotiation": 2,
+    "occultism": 2,
+    "survival": 2,
+    "monster_lore": 2,
+    "persuasion": 2,
+    "pk_pharmacology": 8
+  },
+  "traits": [
+    { "id": "acute_smell", "level": 2 },
+    { "id": "magery", "level": 0 },
+    { "id": "cowardice" },
+    { "id": "honesty" },
+    { "id": "outsider", "option": "stranger" }
+  ],
+  "reincarnation": [
+    { "id": "past_knowledge", "detail": "薬学", "customSkillId": "pk_pharmacology" },
+    { "id": "appraisal_eye" }
+  ],
+  "equipment": [
+    { "id": "dagger", "qty": 1, "equipped": true },
+    { "id": "leather", "qty": 1, "equipped": true },
+    { "id": "healer_kit", "qty": 1 },
+    { "id": "herbs", "qty": 3 }
+  ],
+  "money": 200,
+  "state": { "hp": null, "mp": null, "conditions": [] }
+}

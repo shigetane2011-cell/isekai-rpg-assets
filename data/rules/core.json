@@ -1,0 +1,116 @@
+{
+  "rulesVersion": "0.1.0",
+  "check": {
+    "dice": "3d6",
+    "autoSuccess": [3, 4],
+    "autoFailure": [17, 18],
+    "criticalSuccessMargin": 10,
+    "criticalFailureMargin": -10,
+    "criticalFailure17MaxEffective": 15
+  },
+  "attributes": [
+    { "id": "st", "name": "筋力", "base": 10, "costPerLevel": 10 },
+    { "id": "dx", "name": "敏捷", "base": 10, "costPerLevel": 10 },
+    { "id": "iq", "name": "知力", "base": 10, "costPerLevel": 10 },
+    { "id": "ht", "name": "体力", "base": 10, "costPerLevel": 10 }
+  ],
+  "derived": [
+    { "id": "hp", "name": "HP", "formula": "ceil((st + ht) / 2)", "costPerLevel": 2, "minBought": 0, "maxBought": 5 },
+    { "id": "mp", "name": "MP", "formula": "iq", "costPerLevel": 3, "minBought": 0, "maxBought": 10 },
+    { "id": "will", "name": "意志", "formula": "iq", "costPerLevel": 5, "minBought": -4, "maxBought": 4 },
+    { "id": "per", "name": "知覚", "formula": "iq", "costPerLevel": 5, "minBought": -4, "maxBought": 4 },
+    { "id": "speed", "name": "速度", "formula": "(dx + ht) / 4", "costPerLevel": 0, "minBought": 0, "maxBought": 0 },
+    { "id": "dodge", "name": "回避", "formula": "floor(dx / 2) + 3", "costPerLevel": 0, "minBought": 0, "maxBought": 0 },
+    { "id": "str_bonus", "name": "筋力ボーナス", "formula": "floor((st - 10) / 2)", "costPerLevel": 0, "minBought": 0, "maxBought": 0 }
+  ],
+  "skillCost": {
+    "offsetAtOnePoint": { "easy": 0, "average": -1, "hard": -2 },
+    "note": "1pt=基準, 2pt=+1, 4pt=+2, 以降4ptごとに+1。使えるポイント値は 1, 2, 4, 8, 12, 16 ...",
+    "untrainedPenalty": -5
+  },
+  "creation": {
+    "startingPoints": 120,
+    "disadvantageLimit": -40,
+    "reincarnationLimit": 40,
+    "attributeMin": 7,
+    "attributeMax": 16,
+    "skillValueCap": 16,
+    "startingMoney": 200
+  },
+  "growth": {
+    "perSessionMin": 0,
+    "perSessionMax": 5,
+    "reincarnationNewAllowed": false,
+    "reincarnationLevelUpAllowed": true
+  },
+  "judging": {
+    "situationalModifierMin": -6,
+    "situationalModifierMax": 4,
+    "ladder": [
+      { "label": "極めて容易", "value": 4 },
+      { "label": "容易", "value": 2 },
+      { "label": "普通", "value": 0 },
+      { "label": "困難", "value": -2 },
+      { "label": "至難", "value": -4 },
+      { "label": "無謀", "value": -6 }
+    ]
+  },
+  "reaction": {
+    "dice": "3d6",
+    "table": [
+      { "max": 6, "result": "hostile", "label": "敵対" },
+      { "max": 9, "result": "unfriendly", "label": "冷淡" },
+      { "max": 12, "result": "neutral", "label": "中立" },
+      { "max": 15, "result": "favorable", "label": "好意的" },
+      { "max": 99, "result": "friendly", "label": "友好的" }
+    ]
+  },
+  "combat": {
+    "parry": "floor(skillValue / 2) + 3",
+    "block": "floor(shieldSkillValue / 2) + 3 + shieldBonus",
+    "allOutAttackHit": 4,
+    "allOutAttackDamage": 2,
+    "allOutDefense": 2,
+    "aimPerTurn": 1,
+    "aimMax": 3,
+    "rangeBands": [
+      { "id": "engaged", "name": "接近", "rangedModifier": -2 },
+      { "id": "near", "name": "近", "rangedModifier": 0 },
+      { "id": "mid", "name": "中", "rangedModifier": -2 },
+      { "id": "far", "name": "遠", "rangedModifier": -4 }
+    ],
+    "hitLocations": [
+      { "id": "torso", "name": "胴", "modifier": 0, "damageMultiplier": 1 },
+      { "id": "vitals", "name": "急所", "modifier": -3, "damageMultiplier": 1.5 },
+      { "id": "head", "name": "頭", "modifier": -5, "damageMultiplier": 2 },
+      { "id": "limb", "name": "腕・脚", "modifier": -2, "damageMultiplier": 1, "crippleThreshold": "maxHp / 3" }
+    ],
+    "majorWoundRatio": 0.5,
+    "painPenaltyMax": 3,
+    "deathThresholdMultiplier": 1,
+    "instantDeathMultiplier": 2
+  },
+  "magic": {
+    "requiresTrait": "magery",
+    "scales": [
+      { "id": "minor", "name": "小", "modifier": 0, "mp": 2, "damage": "1d6", "heal": "1d6" },
+      { "id": "moderate", "name": "中", "modifier": -2, "mp": 4, "damage": "2d6", "heal": "2d6" },
+      { "id": "major", "name": "大", "modifier": -4, "mp": 8, "damage": "3d6", "heal": "3d6" },
+      { "id": "epic", "name": "極大", "modifier": -6, "mp": 16, "damage": "4d6", "heal": "4d6", "perSession": 1 }
+    ],
+    "areaModifier": -2,
+    "failureMpRatio": 0.5
+  },
+  "recovery": {
+    "nightRestHp": "floor(ht / 3)",
+    "nightRestMp": "full",
+    "shortRestMp": "floor(iq / 4)",
+    "firstAid": "1d6-2",
+    "medicinePerDay": "1d6"
+  },
+  "pvp": {
+    "modes": ["off", "zones", "always"],
+    "objectionsPerSession": 3,
+    "nonLethalOption": true
+  }
+}

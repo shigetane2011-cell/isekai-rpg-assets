@@ -1,0 +1,20 @@
+{
+  "note": "シナリオは場所の背景を id で指定する。ファイルはリポジトリ直下の画像を指す。",
+  "backgrounds": [
+    { "id": "village", "file": "village.jpg", "label": "村" },
+    { "id": "forest", "file": "forest.jpg", "label": "森" },
+    { "id": "night", "file": "night.jpg", "label": "夜" },
+    { "id": "ruins", "file": "ruins.jpg", "label": "遺跡" },
+    { "id": "dungeon", "file": "dungeon.jpg", "label": "迷宮" },
+    { "id": "altar", "file": "altar.jpg", "label": "祭壇" },
+    { "id": "city", "file": "city.jpg", "label": "都市" },
+    { "id": "noble", "file": "noble.jpg", "label": "貴族の館" },
+    { "id": "sacred", "file": "sacred.jpg", "label": "聖域" },
+    { "id": "underworld", "file": "underworld.jpg", "label": "冥界" },
+    { "id": "wasteland", "file": "wasteland.jpg", "label": "荒野" },
+    { "id": "battle", "file": "battle.jpg", "label": "戦場" }
+  ],
+  "portraits": [
+    { "id": "hero", "file": "hero.png", "label": "主人公（汎用）" }
+  ]
+}

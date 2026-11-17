@@ -1,0 +1,20 @@
+{
+  "rulesVersion": "0.1.0",
+  "note": "転生技能はキャラクター作成時にのみ取得できる。取得はポイント制（合計は core.creation.reincarnationLimit まで）。レベルのあるものは成長ポイントで強化できる。",
+  "reincarnation": [
+    { "id": "appraisal_eye", "name": "鑑定眼", "kind": "reincarnation", "cost": 20, "effects": [{ "type": "narrative" }], "pvp": "対象が人物・魔物なら、知覚と相手の意志で対抗判定。勝てば能力値・HP・主要技能が分かる。", "description": "見た物や人の性質を数値として見抜く。物品なら判定なしで名称・効果・おおよその価値が分かる。" },
+    { "id": "omni_lingual", "name": "言語理解", "kind": "reincarnation", "cost": 10, "effects": [{ "type": "narrative" }, { "type": "skill", "target": "ancient_lang", "value": 4 }], "description": "あらゆる人の言葉を話し、読める。古代語+4。" },
+    { "id": "past_knowledge", "name": "前世の知識", "kind": "reincarnation", "cost": 15, "requiresDetail": true, "effects": [{ "type": "customSkill", "attr": "iq", "difficulty": "hard", "freePoints": 4 }], "description": "前世の専門分野（化学、医療、料理、機械など）1つを、この世界にない難技能として持ち込む。その技能に4pt分を無償で得る。" },
+    { "id": "pocket_dimension", "name": "異空収納", "kind": "reincarnation", "costPerLevel": 10, "minLevel": 1, "maxLevel": 3, "effects": [{ "type": "narrative" }], "description": "異空間に物をしまう。容量はレベル1で背負い袋1つ、2で荷車1台、3で小屋1軒。中の時間は止まっている。" },
+    { "id": "mana_overflow", "name": "魔力過多", "kind": "reincarnation", "cost": 25, "requiresTrait": "magery", "effects": [{ "type": "derivedMultiplier", "target": "mp", "value": 2 }], "description": "MPが2倍。魔法適性が必要。" },
+    { "id": "deaths_edge", "name": "死線の勘", "kind": "reincarnation", "cost": 20, "effects": [{ "type": "reroll", "uses": 1, "per": "session", "scope": "defense" }], "description": "1セッションに1回、自分の防御判定を振り直せる。" },
+    { "id": "growth_boost", "name": "経験加速", "kind": "reincarnation", "costPerLevel": 15, "minLevel": 1, "maxLevel": 2, "effects": [{ "type": "growthBonus", "value": 1, "perLevel": true }], "description": "セッションで得る成長ポイント+レベル（上限も同じだけ上がる）。" },
+    { "id": "hero_aptitude", "name": "勇者の資質", "kind": "reincarnation", "cost": 30, "effects": [{ "type": "tag", "target": "combat", "value": 1 }, { "type": "situational", "value": 4, "applies": "恐怖判定" }], "description": "戦闘技能すべて+1、恐怖判定+4。" },
+    { "id": "status_immunity", "name": "状態異常耐性", "kind": "reincarnation", "cost": 20, "effects": [{ "type": "situational", "value": 4, "applies": "毒・麻痺・睡眠・魅了・石化への抵抗判定" }], "description": "状態異常にかかりにくい。" },
+    { "id": "monster_speech", "name": "魔物言語", "kind": "reincarnation", "cost": 10, "effects": [{ "type": "narrative" }], "description": "知性のある魔物と言葉を交わせる。会話できても友好的とは限らない。" },
+    { "id": "auto_mapping", "name": "地図化", "kind": "reincarnation", "cost": 10, "effects": [{ "type": "narrative" }, { "type": "skill", "target": "navigation", "value": 2 }], "description": "一度通った場所の地図が頭の中に描かれる。迷宮で迷わない。" },
+    { "id": "spirit_contract", "name": "契約精霊", "kind": "reincarnation", "costPerLevel": 10, "minLevel": 1, "maxLevel": 3, "requiresDetail": true, "effects": [{ "type": "companion", "value": 1, "perLevel": true }], "description": "精霊が同行する。レベルが高いほど強い。精霊はGMが動かす協力的なNPCとして扱う。" },
+    { "id": "regeneration", "name": "再生", "kind": "reincarnation", "cost": 25, "effects": [{ "type": "narrative" }], "description": "戦闘中、自分の手番の開始時にHPが1回復する。一晩の休息でHPが全快する。" },
+    { "id": "gifted", "name": "天賦の才", "kind": "reincarnation", "cost": 15, "requiresDetail": true, "effects": [{ "type": "skillCostTier", "shift": -1, "chosenTag": true }], "description": "技能の分類1つ（戦闘・魔法・知識など）を選ぶ。その分類の技能は難度が1段階易しいものとして計算する（難→普、普→易）。" }
+  ]
+}

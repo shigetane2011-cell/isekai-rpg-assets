@@ -1,0 +1,98 @@
+{
+  "formatVersion": 1,
+  "id": "example_minimal",
+  "version": "0.1.0",
+  "title": "（形式見本）物置小屋の鼠",
+  "summary": "シナリオ形式と検証スクリプトの動作確認用の最小サンプル。実際に遊ぶためのものではない。",
+  "authors": ["sample"],
+  "rulesVersion": "0.1.0",
+  "players": { "min": 1, "max": 2 },
+  "startingPoints": 120,
+  "pvp": { "mode": "off" },
+  "gmGuide": "軽い調子で。鼠は臆病で、追い詰められない限り逃げる。",
+  "ruleExtensions": {
+    "skills": [],
+    "traits": [],
+    "equipment": [
+      { "id": "x_barn_key", "name": "小屋の鍵", "kind": "gear", "price": 0 }
+    ]
+  },
+  "flags": [
+    { "id": "rat_driven_off", "type": "boolean", "initial": false, "description": "鼠を追い払った" },
+    { "id": "barn_unlocked", "type": "boolean", "initial": false, "description": "小屋の扉が開いた" }
+  ],
+  "start": {
+    "locationId": "farmyard",
+    "time": "昼",
+    "introduction": "農家の老婆が、物置小屋に大鼠が棲みついたと困っている。"
+  },
+  "locations": [
+    {
+      "id": "farmyard",
+      "name": "農家の庭",
+      "background": "village",
+      "public": "鶏が歩き回る庭。奥に古い物置小屋があり、扉には錠がかかっている。",
+      "secret": "老婆は鍵を前掛けのポケットに入れている。頼めばくれる。",
+      "npcs": ["old_woman"],
+      "clues": [
+        { "id": "gnaw_marks", "text": "小屋の壁の下に齧られた穴がある", "discover": { "skill": "observation", "modifier": 0 } }
+      ],
+      "exits": [
+        { "to": "barn", "label": "物置小屋に入る", "condition": { "flag": "barn_unlocked", "eq": true } }
+      ]
+    },
+    {
+      "id": "barn",
+      "name": "物置小屋",
+      "background": "dungeon",
+      "public": "薄暗く、干し草と麻袋が積まれている。何かが走る音がする。",
+      "secret": "大鼠は麻袋の陰に隠れている。",
+      "npcs": ["giant_rat"],
+      "hazards": [
+        { "id": "rotten_floor", "text": "床板が一部腐っている", "check": { "skill": "acrobatics", "modifier": 2 }, "onFail": [{ "damage": "1d3", "to": "actor", "armor": false }] }
+      ],
+      "exits": [{ "to": "farmyard", "label": "庭に戻る" }]
+    }
+  ],
+  "npcs": [
+    {
+      "id": "old_woman",
+      "name": "マーサ婆さん",
+      "kind": "npc",
+      "public": "腰の曲がった気さくな老婆。",
+      "secret": "鍵を持っている。鼠が怖くて小屋に近づけない。",
+      "motivation": "小屋の干し草を守りたい",
+      "knows": ["鼠は夜になると庭に出てくる"],
+      "attitude": "favorable",
+      "inventory": ["x_barn_key"]
+    },
+    {
+      "id": "giant_rat",
+      "name": "大鼠",
+      "kind": "monster",
+      "public": "犬ほどもある灰色の鼠。",
+      "secret": "火を極端に怖がる。",
+      "motivation": "巣を守る。追い詰められると噛みつく。",
+      "attitude": "hostile",
+      "statblock": {
+        "hp": 6, "dr": 0, "speed": 6, "dodge": 9, "will": 8, "per": 12,
+        "attacks": [{ "name": "噛みつき", "skill": 11, "damage": "1d3", "reach": ["engaged"] }],
+        "skills": { "stealth": 13, "running": 12 },
+        "tags": ["animal"]
+      }
+    }
+  ],
+  "items": [],
+  "events": [
+    {
+      "id": "rat_flees",
+      "trigger": { "type": "npcDefeated", "npc": "giant_rat" },
+      "once": true,
+      "gmText": "鼠は壁の穴から逃げ出し、二度と戻らない。",
+      "effects": [{ "setFlag": "rat_driven_off", "value": true }]
+    }
+  ],
+  "endings": [
+    { "id": "solved", "title": "小屋の平和", "condition": { "flag": "rat_driven_off", "eq": true }, "text": "老婆は礼に焼き菓子と銀貨10枚をくれた。", "rewards": { "money": 10, "growthHint": 1 } }
+  ]
+}
